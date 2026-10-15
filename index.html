@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JARVIS — Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* =====================================================================
+       DESIGN TOKENS & RESET
+    ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-deep:       #020c1a;
+      --bg-navy:       #061a2e;
+      --panel-bg:      rgba(6, 20, 40, 0.75);
+      --panel-border:  rgba(0, 200, 255, 0.28);
+      --panel-radius:  10px;
+      --cyan:          #19d3ff;
+      --cyan-bright:   #00e5ff;
+      --cyan-dim:      #7fdcff;
+      --cyan-glow:     rgba(0, 229, 255, 0.22);
+      --purple:        #8a5cff;
+      --amber:         #ffb020;
+      --green:         #2ee59d;
+      --red:           #ff4d6d;
+      --blue:          #3a8bff;
+      --text-primary:  #e8f6ff;
+      --text-muted:    #7f9bb3;
+      --text-label:    #7fdcff;
+      --font-hud:      'Orbitron', 'Segoe UI', sans-serif;
+      --font-body:     'Rajdhani', 'Segoe UI', sans-serif;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* =====================================================================
+       BACKGROUND — dotted grid + radial glow
+    ===================================================================== */
+    body {
+      background:
+        radial-gradient(ellipse 60% 55% at 50% 40%, rgba(0,100,200,0.12) 0%, transparent 70%),
+        linear-gradient(160deg, #030a14 0%, #061a2e 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(circle, rgba(0,180,255,0.18) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =====================================================================
+       LAYOUT SHELL
+    ===================================================================== */
+    #app {
+      position: relative; z-index: 1;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      grid-template-columns: 188px 1fr;
+      grid-template-areas:
+        "sidebar topbar"
+        "sidebar main"
+        "sidebar bottombar";
+      width: 100vw; height: 100vh;
+      overflow: hidden;
+    }
+
+    /* =====================================================================
+       PANEL BASE — glassmorphism + corner brackets
+    ===================================================================== */
+    .panel {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--panel-radius);
+      backdrop-filter: blur(14px);
+      box-shadow:
+        0 0 16px rgba(0, 180, 255, 0.1),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    .panel::before, .panel::after {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      border-color: var(--cyan-bright);
+      border-style: solid;
+      z-index: 2;
+    }
+    .panel::before { top: 4px; left: 4px; border-width: 2px 0 0 2px; }
+    .panel::after  { bottom: 4px; right: 4px; border-width: 0 2px 2px 0; }
+
+    .panel-label {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-label);
+      font-weight: 600;
+    }
+
+    /* =====================================================================
+       LEFT SIDEBAR
+    ===================================================================== */
+    #sidebar {
+      grid-area: sidebar;
+      background: rgba(3,12,26,0.92);
+      border-right: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      z-index: 10;
+    }
+    #sidebar::-webkit-scrollbar { width: 3px; }
+    #sidebar::-webkit-scrollbar-thumb { background: var(--cyan-glow); border-radius: 2px; }
+
+    /* Logo block */
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid rgba(0,200,255,0.12);
+    }
+    .logo-orb {
+      width: 36px; height: 36px; flex-shrink: 0;
+      border-radius: 50%;
+      border: 2px solid var(--cyan-bright);
+      box-shadow: 0 0 12px var(--cyan-glow), inset 0 0 8px rgba(0,229,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle, rgba(0,150,255,0.25) 0%, transparent 70%);
+      animation: orbPulse 2.5s ease-in-out infinite;
+    }
+    @keyframes orbPulse {
+      0%,100% { box-shadow: 0 0 10px var(--cyan-glow), inset 0 0 8px rgba(0,229,255,0.15); }
+      50%      { box-shadow: 0 0 22px rgba(0,229,255,0.5), inset 0 0 14px rgba(0,229,255,0.25); }
+    }
+    .logo-text { display: flex; flex-direction: column; }
+    .logo-title {
+      font-family: var(--font-hud);
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.22em;
+      color: var(--cyan-bright);
+      text-shadow: 0 0 12px var(--cyan-glow);
+      line-height: 1;
+    }
+    .logo-sub {
+      font-family: var(--font-hud);
+      font-size: 7px;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    /* Nav */
+    .sidebar-nav { flex: 1; padding: 6px 0; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      border-left: 2px solid transparent;
+      user-select: none;
+    }
+    .nav-item:hover {
+      color: var(--text-primary);
+      background: rgba(0,180,255,0.06);
+    }
+    .nav-item.active {
+      color: var(--cyan-bright);
+      background: rgba(0,180,255,0.1);
+      border-left-color: var(--cyan-bright);
+    }
+    .nav-item.active .nav-icon svg { filter: drop-shadow(0 0 4px var(--cyan-bright)); }
+    .nav-icon { width: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--cyan-bright);
+      color: #000;
+      font-size: 9px;
+      font-weight: 700;
+      font-family: var(--font-hud);
+      padding: 1px 5px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .nav-badge.amber { background: var(--amber); }
+    .nav-badge.purple { background: var(--purple); }
+
+    /* Voice Status card */
+    .voice-card {
+      margin: 8px 10px;
+      padding: 10px;
+      background: rgba(0,150,255,0.06);
+      border: 1px solid rgba(0,200,255,0.2);
+      border-radius: 8px;
+    }
+    .voice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .voice-label { font-size: 9px; letter-spacing: 0.15em; color: var(--text-muted); font-family: var(--font-hud); text-transform: uppercase; }
+    .voice-arrow { color: var(--cyan-dim); font-size: 10px; cursor: pointer; }
+    .waveform {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 22px;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+    .wave-bar {
+      width: 3px;
+      background: var(--cyan-bright);
+      border-radius: 2px;
+      animation: waveDance var(--dur, 0.8s) ease-in-out infinite alternate;
+      opacity: 0.75;
+    }
+    @keyframes waveDance {
+      from { height: 4px; }
+      to   { height: var(--h, 18px); }
+    }
+    .voice-status-text { text-align: center; font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+    .mic-btn {
+      display: block;
+      margin: 0 auto 6px;
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      border: 2px solid var(--cyan-bright);
+      background: radial-gradient(circle, rgba(0,180,255,0.2) 0%, transparent 70%);
+      box-shadow: 0 0 14px rgba(0,229,255,0.35);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+      animation: micPulse 2s ease-in-out infinite;
+    }
+    @keyframes micPulse {
+      0%,100% { box-shadow: 0 0 12px rgba(0,229,255,0.3); }
+      50%      { box-shadow: 0 0 24px rgba(0,229,255,0.6); }
+    }
+    .mic-btn:hover { box-shadow: 0 0 30px rgba(0,229,255,0.8); }
+    .tap-text { text-align: center; font-size: 10px; color: var(--text-muted); }
+    .focus-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: calc(100% - 20px);
+      margin: 6px 10px 10px;
+      padding: 7px;
+      border: 1px solid rgba(0,200,255,0.2);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .focus-btn:hover { border-color: var(--cyan-bright); color: var(--cyan-bright); background: rgba(0,200,255,0.06); }
+
+    /* =====================================================================
+       TOP BAR
+    ===================================================================== */
+    #topbar {
+      grid-area: topbar;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      height: 56px;
+      background: rgba(3,12,26,0.88);
+      border-bottom: 1px solid var(--panel-border);
+      gap: 12px;
+      z-index: 9;
+    }
+
+    .sys-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border: 1px solid rgba(46,229,157,0.4);
+      border-radius: 3px;
+      background: rgba(46,229,157,0.06);
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--green);
+      white-space: nowrap;
+      position: relative;
+    }
+    .sys-status-pill::before, .sys-status-pill::after {
+      content: '';
+      position: absolute;
+      width: 6px; height: 6px;
+      border-color: var(--green);
+      border-style: solid;
+    }
+    .sys-status-pill::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+    .sys-status-pill::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      animation: dotBlink 1.8s ease-in-out infinite;
+    }
+    @keyframes dotBlink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.45; }
+    }
+
+    .topbar-clock {
+      flex: 1;
+      text-align: center;
+    }
+    .clock-date {
+      font-family: var(--font-body);
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      line-height: 1;
+    }
+    .clock-time {
+      font-family: var(--font-hud);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--cyan-bright);
+      text-shadow: 0 0 18px rgba(0,229,255,0.6);
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 10px;
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+      background: rgba(6,20,40,0.7);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: var(--font-body);
+      width: 160px;
+    }
+    .search-box input {
+      background: none; border: none; outline: none;
+      color: var(--text-primary); font-family: var(--font-body); font-size: 12px;
+      width: 100%;
+    }
+    .search-box input::placeholder { color: var(--text-muted); }
+    .icon-btn {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      border: 1px solid var(--panel-border);
+      background: rgba(6,20,40,0.5);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all 0.2s; color: var(--text-muted);
+    }
+    .icon-btn:hover { border-color: var(--cyan-bright); color: var(--cyan-bright); background: rgba(0,200,255,0.08); }
+    .user-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 4px 10px 4px 4px;
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      background: rgba(6,20,40,0.6);
+      cursor: pointer;
+    }
+    .user-avatar {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple), var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff;
+      font-family: var(--font-hud);
+    }
+    .user-info { display: flex; flex-direction: column; }
+    .user-role { font-size: 9px; color: var(--text-muted); font-family: var(--font-hud); letter-spacing: 0.08em; }
+    .user-name { font-size: 11px; color: var(--text-primary); font-family: var(--font-body); font-weight: 600; }
+
+    /* =====================================================================
+       MAIN CONTENT AREA
+    ===================================================================== */
+    #main {
+      grid-area: main;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #main::-webkit-scrollbar { width: 4px; }
+    #main::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 2px; }
+
+    /* Row containers */
+    .row { display: flex; gap: 8px; }
+
+    /* =====================================================================
+       ROW 1
+    ===================================================================== */
+    .row1 { flex: 0 0 auto; }
+    .row1 .ai-core  { flex: 0 0 196px; }
+    .row1 .hero     { flex: 1; }
+    .row1 .live-feed { flex: 0 0 230px; }
+
+    /* AI CORE OVERVIEW */
+    .ai-core-panel { padding: 12px 10px; }
+    .ai-core-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .ai-core-item:hover { background: rgba(0,180,255,0.05); border-color: rgba(0,200,255,0.15); }
+    .ai-core-item:last-child { margin-bottom: 0; }
+    .core-icon-wrap {
+      width: 30px; height: 30px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .core-title { font-size: 13px; font-weight: 600; color: var(--text-primary); line-height: 1; }
+    .core-sub   { font-size: 10px; margin-top: 2px; }
+
+    /* HERO CENTER */
+    .hero-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg-glow {
+      position: absolute;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,150,255,0.12) 0%, transparent 70%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -58%);
+      pointer-events: none;
+    }
+
+    /* Animated ORB */
+    .orb-container {
+      position: relative;
+      width: 200px; height: 200px;
+      flex-shrink: 0;
+      margin-top: 8px;
+    }
+    .orb-svg { width: 100%; height: 100%; overflow: visible; }
+    .ring1 { animation: spinRing1 8s linear infinite; transform-origin: 100px 100px; }
+    .ring2 { animation: spinRing2 12s linear infinite; transform-origin: 100px 100px; }
+    .ring3 { animation: spinRing3 6s linear infinite reverse; transform-origin: 100px 100px; }
+    @keyframes spinRing1 { to { transform: rotate(360deg); } }
+    @keyframes spinRing2 { to { transform: rotate(360deg); } }
+    @keyframes spinRing3 { to { transform: rotate(360deg); } }
+    .orb-dot { animation: dotOrbit 8s linear infinite; transform-origin: 100px 100px; }
+    .orb-dot2 { animation: dotOrbit2 12s linear infinite; transform-origin: 100px 100px; }
+    @keyframes dotOrbit  { to { transform: rotate(360deg); } }
+    @keyframes dotOrbit2 { to { transform: rotate(-360deg); } }
+
+    .hero-title {
+      font-family: var(--font-hud);
+      font-size: 40px;
+      font-weight: 900;
+      letter-spacing: 0.32em;
+      color: var(--cyan-bright);
+      text-shadow: 0 0 30px rgba(0,229,255,0.7), 0 0 60px rgba(0,229,255,0.3);
+      margin-top: 4px;
+      line-height: 1;
+    }
+    .hero-sub {
+      font-family: var(--font-hud);
+      font-size: 12px;
+      letter-spacing: 0.28em;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .hero-version {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      margin-top: 2px;
+    }
+
+    /* LIVE INTELLIGENCE FEED */
+    .feed-panel { padding: 10px; display: flex; flex-direction: column; }
+    .feed-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .live-badge {
+      background: rgba(46,229,157,0.15);
+      border: 1px solid rgba(46,229,157,0.4);
+      color: var(--green);
+      font-family: var(--font-hud);
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      padding: 2px 6px;
+      border-radius: 3px;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .live-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); animation: dotBlink 1s infinite; }
+    .feed-item {
+      display: flex;
+      gap: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(0,180,255,0.07);
+      align-items: flex-start;
+    }
+    .feed-item:last-child { border-bottom: none; }
+    .feed-icon-wrap {
+      width: 24px; height: 24px; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .feed-content { flex: 1; min-width: 0; }
+    .feed-title { font-size: 11px; font-weight: 600; color: var(--text-primary); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .feed-sub   { font-size: 10px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .feed-tag {
+      font-family: var(--font-hud);
+      font-size: 8px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-top: 1px;
+      letter-spacing: 0.05em;
+    }
+    .tag-info   { background: rgba(58,139,255,0.2);  color: var(--blue); }
+    .tag-warn   { background: rgba(255,176,32,0.2);  color: var(--amber); }
+    .tag-tip    { background: rgba(46,229,157,0.15); color: var(--green); }
+    .tag-live   { background: rgba(46,229,157,0.15); color: var(--green); }
+    .tag-error  { background: rgba(255,77,109,0.2);  color: var(--red); }
+    .feed-view-all { margin-top: 8px; font-size: 10px; color: var(--cyan-dim); cursor: pointer; text-align: right; }
+    .feed-view-all:hover { color: var(--cyan-bright); }
+
+    /* =====================================================================
+       ROW 2
+    ===================================================================== */
+    .row2 .agents-panel   { flex: 1; }
+    .row2 .timeline-panel { flex: 0 0 260px; }
+    .row2 .commands-panel { flex: 0 0 190px; }
+
+    /* ACTIVE AGENTS */
+    .agents-panel { padding: 10px; }
+    .agents-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .view-all { font-size: 10px; color: var(--cyan-dim); cursor: pointer; }
+    .view-all:hover { color: var(--cyan-bright); }
+    .agents-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .agent-card {
+      padding: 8px;
+      border: 1px solid rgba(0,200,255,0.15);
+      border-radius: 7px;
+      background: rgba(0,20,50,0.4);
+      transition: all 0.2s;
+    }
+    .agent-card:hover { border-color: var(--cyan-bright); background: rgba(0,100,200,0.1); }
+    .agent-card-top { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+    .agent-icon-box {
+      width: 28px; height: 28px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .agent-name { font-size: 12px; font-weight: 600; color: var(--text-primary); }
+    .agent-status-row { display: flex; align-items: center; gap: 5px; }
+    .status-dot-sm {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-green  { background: var(--green);  box-shadow: 0 0 5px var(--green); }
+    .dot-amber  { background: var(--amber);  box-shadow: 0 0 5px var(--amber); }
+    .dot-gray   { background: #4a6070; }
+    .dot-cyan   { background: var(--cyan-bright); box-shadow: 0 0 5px var(--cyan-bright); animation: dotBlink 1s infinite; }
+    .agent-status-text { font-size: 10px; }
+    .agent-sparkline { margin-top: 5px; height: 18px; display: flex; align-items: flex-end; gap: 1.5px; }
+    .spark-bar {
+      width: 3px; border-radius: 1px; flex: 1;
+      animation: sparkDance var(--sd, 0.7s) ease-in-out infinite alternate;
+    }
+    @keyframes sparkDance {
+      from { height: 3px; opacity: 0.4; }
+      to   { height: var(--sh, 14px); opacity: 0.9; }
+    }
+
+    /* MISSION TIMELINE */
+    .timeline-panel { padding: 10px; }
+    .timeline-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .timeline-today {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--text-muted);
+      border: 1px solid var(--panel-border); border-radius: 4px; padding: 2px 8px;
+      cursor: pointer;
+    }
+    .timeline-list { display: flex; flex-direction: column; gap: 0; }
+    .timeline-item { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; position: relative; }
+    .timeline-item:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      left: 26px; top: 22px;
+      width: 1px; height: calc(100% - 4px);
+      background: rgba(0,180,255,0.15);
+    }
+    .tl-time { font-size: 9px; color: var(--text-muted); width: 34px; flex-shrink: 0; margin-top: 3px; font-family: var(--font-hud); }
+    .tl-dot-wrap { width: 14px; flex-shrink: 0; display: flex; justify-content: center; margin-top: 4px; }
+    .tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-title { font-size: 11px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tl-sub   { font-size: 9px; color: var(--text-muted); margin-top: 1px; }
+    .tl-status {
+      font-family: var(--font-hud); font-size: 8px; padding: 2px 5px; border-radius: 3px;
+      flex-shrink: 0; margin-top: 2px; letter-spacing: 0.05em; font-weight: 600;
+    }
+    .tl-done    { background: rgba(46,229,157,0.15);  color: var(--green); }
+    .tl-soon    { background: rgba(255,176,32,0.15);  color: var(--amber); }
+    .tl-focus   { background: rgba(0,229,255,0.1);    color: var(--cyan-bright); }
+    .tl-overdue { background: rgba(255,77,109,0.15);  color: var(--red); }
+    .tl-sched   { background: rgba(58,139,255,0.15);  color: var(--blue); }
+    .timeline-footer { margin-top: 8px; font-size: 10px; color: var(--cyan-dim); cursor: pointer; text-align: center; }
+    .timeline-footer:hover { color: var(--cyan-bright); }
+
+    /* QUICK COMMANDS */
+    .commands-panel { padding: 10px; display: flex; flex-direction: column; }
+    .commands-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; flex: 1; }
+    .cmd-btn {
+      display: flex; align-items: center; gap: 9px;
+      padding: 9px 10px;
+      border: 1px solid rgba(0,200,255,0.18);
+      border-radius: 7px;
+      background: rgba(0,20,50,0.3);
+      cursor: pointer;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.2s;
+      width: 100%;
+      text-align: left;
+    }
+    .cmd-btn:hover { border-color: var(--cyan-bright); background: rgba(0,150,255,0.1); color: var(--cyan-bright); }
+    .cmd-btn:hover .cmd-icon { color: var(--cyan-bright); }
+    .cmd-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: var(--cyan-dim); flex-shrink: 0; }
+
+    /* =====================================================================
+       ROW 3
+    ===================================================================== */
+    .row3 .monitor-panel  { flex: 1; }
+    .row3 .memory-panel   { flex: 1; }
+    .row3 .llm-panel      { flex: 1; }
+
+    /* SYSTEM MONITOR */
+    .monitor-panel { padding: 10px; }
+    .gauges-row { display: flex; gap: 12px; justify-content: center; align-items: center; margin-top: 8px; }
+    .gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .gauge-svg { width: 80px; height: 80px; }
+    .gauge-label { font-family: var(--font-hud); font-size: 10px; color: var(--text-muted); letter-spacing: 0.12em; }
+
+    /* MEMORY INSIGHTS */
+    .memory-panel { padding: 10px; }
+    .memory-body { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+    .constellation { flex: 0 0 120px; height: 90px; }
+    .memory-stats { flex: 1; }
+    .mem-stat { margin-bottom: 8px; }
+    .mem-stat-val { font-family: var(--font-hud); font-size: 22px; font-weight: 700; color: var(--cyan-bright); text-shadow: 0 0 12px var(--cyan-glow); line-height: 1; }
+    .mem-stat-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.06em; }
+    .memory-footer { margin-top: 8px; font-size: 10px; color: var(--cyan-dim); cursor: pointer; }
+    .memory-footer:hover { color: var(--cyan-bright); }
+
+    /* LLM STATUS */
+    .llm-panel { padding: 10px; }
+    .llm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .llm-connected {
+      font-family: var(--font-hud); font-size: 9px; color: var(--green);
+      background: rgba(46,229,157,0.1); border: 1px solid rgba(46,229,157,0.3);
+      padding: 2px 7px; border-radius: 10px; display: flex; align-items: center; gap: 4px;
+    }
+    .llm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .llm-tile {
+      padding: 7px 7px;
+      border: 1px solid rgba(0,200,255,0.12);
+      border-radius: 6px;
+      background: rgba(0,15,35,0.5);
+      display: flex; align-items: center; gap: 7px;
+      transition: all 0.2s;
+    }
+    .llm-tile:hover { border-color: rgba(0,200,255,0.3); background: rgba(0,50,100,0.2); }
+    .llm-tile-icon { width: 24px; height: 24px; border-radius: 5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; }
+    .llm-tile-info { flex: 1; min-width: 0; }
+    .llm-tile-name  { font-size: 11px; font-weight: 600; color: var(--text-primary); }
+    .llm-tile-status { font-size: 9px; }
+    .connected-text { color: var(--green); }
+    .notlinked-text { color: var(--text-muted); }
+    .llm-footer { margin-top: 8px; font-size: 10px; color: var(--cyan-dim); cursor: pointer; }
+    .llm-footer:hover { color: var(--cyan-bright); }
+
+    /* =====================================================================
+       BOTTOM BAR
+    ===================================================================== */
+    #bottombar {
+      grid-area: bottombar;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      height: 44px;
+      background: rgba(3,12,26,0.92);
+      border-top: 1px solid var(--panel-border);
+      gap: 10px;
+      z-index: 9;
+    }
+    .bar-chips { display: flex; gap: 8px; align-items: center; }
+    .bar-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 9px;
+      border: 1px solid rgba(0,200,255,0.18);
+      border-radius: 12px;
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .bar-chip svg { flex-shrink: 0; }
+    .talk-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin: 0 12px;
+      padding: 6px 20px;
+      border: 1.5px solid var(--cyan-bright);
+      border-radius: 30px;
+      background: rgba(0,100,200,0.08);
+      box-shadow: 0 0 18px rgba(0,229,255,0.2), inset 0 0 10px rgba(0,229,255,0.04);
+      cursor: pointer;
+      transition: all 0.2s;
+      animation: pillPulse 3s ease-in-out infinite;
+    }
+    @keyframes pillPulse {
+      0%,100% { box-shadow: 0 0 16px rgba(0,229,255,0.2); }
+      50%      { box-shadow: 0 0 28px rgba(0,229,255,0.4); }
+    }
+    .talk-pill:hover { box-shadow: 0 0 36px rgba(0,229,255,0.5); }
+    .talk-wave { display: flex; align-items: center; gap: 2px; height: 18px; }
+    .talk-bar {
+      width: 2.5px; border-radius: 2px;
+      background: var(--cyan-bright);
+      animation: waveDance var(--dur, 0.7s) ease-in-out infinite alternate;
+    }
+    .talk-text { display: flex; flex-direction: column; align-items: center; }
+    .talk-main { font-family: var(--font-hud); font-size: 11px; font-weight: 700; color: var(--cyan-bright); letter-spacing: 0.15em; }
+    .talk-sub  { font-size: 9px; color: var(--text-muted); letter-spacing: 0.1em; }
+    .exec-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 14px;
+      border: 1px solid var(--cyan-bright);
+      border-radius: 6px;
+      background: rgba(0,180,255,0.08);
+      color: var(--cyan-bright);
+      font-family: var(--font-body);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .exec-btn:hover { background: rgba(0,180,255,0.18); box-shadow: 0 0 12px rgba(0,229,255,0.3); }
+
+    /* =====================================================================
+       COMING SOON TOOLTIP
+    ===================================================================== */
+    .coming-soon {
+      position: relative;
+    }
+    .coming-soon::after {
+      content: 'COMING SOON';
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(3,12,26,0.95);
+      border: 1px solid var(--amber);
+      color: var(--amber);
+      font-family: var(--font-hud);
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      padding: 3px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 100;
+    }
+    .coming-soon:hover::after { opacity: 1; }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(6,20,40,0.95);
+      border: 1px solid var(--cyan-bright);
+      color: var(--cyan-bright);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      padding: 8px 20px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,229,255,0.3);
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Scrollbar for main */
+    #main { scrollbar-width: thin; scrollbar-color: rgba(0,200,255,0.2) transparent; }
+
+    /* =====================================================================
+       RESPONSIVE
+    ===================================================================== */
+    @media (max-width: 1100px) {
+      #app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto auto; grid-template-areas: "topbar" "sidebar" "main" "bottombar"; }
+      #sidebar { flex-direction: row; overflow-x: auto; max-height: none; border-right: none; border-bottom: 1px solid var(--panel-border); }
+      .sidebar-nav { display: flex; flex-direction: row; }
+      .voice-card, .focus-btn { display: none; }
+      .row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================================================================
+       LEFT SIDEBAR
+  =================================================================== -->
+  <aside id="sidebar">
+    <!-- Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-orb">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="7" stroke="#00e5ff" stroke-width="1.5" fill="none"/>
+          <circle cx="9" cy="9" r="3.5" fill="#00e5ff" opacity="0.8"/>
+          <line x1="9" y1="2" x2="9" y2="16" stroke="#00e5ff" stroke-width="0.8" opacity="0.5"/>
+          <line x1="2" y1="9" x2="16" y2="9" stroke="#00e5ff" stroke-width="0.8" opacity="0.5"/>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title">JARVIS</div>
+        <div class="logo-sub">COMMAND CENTER</div>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="void(0)">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.4"/>
+          </svg>
+        </div>
+        Command Center
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/>
+            <circle cx="8" cy="8" r="2.5" fill="currentColor" opacity="0.7"/>
+          </svg>
+        </div>
+        AI Core
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="4" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M5 4V3a3 3 0 0 1 6 0v1" stroke="currentColor" stroke-width="1.4"/>
+            <circle cx="8" cy="8.5" r="1.5" fill="currentColor" opacity="0.7"/>
+          </svg>
+        </div>
+        Agents
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        Tasks
+        <span class="nav-badge amber">3</span>
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="1" y="3" width="14" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M1 7h14" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M5 1v4M11 1v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        Calendar
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <ellipse cx="8" cy="8" rx="6" ry="4" stroke="currentColor" stroke-width="1.4"/>
+            <circle cx="8" cy="8" r="1.5" fill="currentColor" opacity="0.7"/>
+            <path d="M8 4v8M4 6l8 4M4 10l8-4" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+          </svg>
+        </div>
+        Memory
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M14 10a2 2 0 0 1-2 2H5l-3 2V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6z" stroke="currentColor" stroke-width="1.4"/>
+          </svg>
+        </div>
+        Conversations
+        <span class="nav-badge">12</span>
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 3h12M2 7h12M2 11h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="13" cy="12" r="2.5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M13 11v1l.7.7" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+          </svg>
+        </div>
+        Knowledge Base
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="6" width="5" height="7" rx="1" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="9" y="3" width="5" height="10" rx="1" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M4 6V4M11 3V1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        Tools &amp; Skills
+        <span class="nav-badge purple">18</span>
+      </div>
+      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+        <div class="nav-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8a5 5 0 0 1 10 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M3 8l2 3M13 8l-2 3M5 11h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        Workflows
+      </div>
+    </nav>
+
+    <!-- Voice Status -->
+    <div class="voice-card">
+      <div class="voice-header">
+        <span class="voice-label">Voice Status</span>
+        <span class="voice-arrow">›</span>
+      </div>
+      <div class="waveform" id="voiceWave"></div>
+      <div class="voice-status-text">Listening...</div>
+      <div style="display:flex;justify-content:center;margin-bottom:6px;">
+        <div class="mic-btn coming-soon" onclick="showToast('Voice not implemented in this MVP')">
+          <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
+            <rect x="5" y="1" width="6" height="10" rx="3" stroke="#00e5ff" stroke-width="1.5"/>
+            <path d="M2 10a6 6 0 0 0 12 0" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="8" y1="16" x2="8" y2="19" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="5" y1="19" x2="11" y2="19" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+      </div>
+      <div class="tap-text">Tap to Speak</div>
+    </div>
+    <button class="focus-btn coming-soon" onclick="showToast('Focus Mode not implemented in this MVP')">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M6 1l1.5 3h3L8 6.2l.9 3.3L6 7.6l-2.9 1.9L4 6.2 1.5 4h3z" fill="#ffb020"/>
+      </svg>
+      Focus Mode
+    </button>
+  </aside>
+
+  <!-- ===================================================================
+       TOP BAR
+  =================================================================== -->
+  <header id="topbar">
+    <div class="sys-status-pill">
+      <div class="status-dot"></div>
+      SYSTEM STATUS &bull; OPTIMAL
+    </div>
+
+    <div class="topbar-clock">
+      <div class="clock-date" id="clockDate">Thursday, 15 October 2026</div>
+      <div class="clock-time" id="clockTime">00:00:00</div>
+    </div>
+
+    <div class="topbar-right">
+      <div class="search-box">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <circle cx="5.5" cy="5.5" r="4" stroke="#7f9bb3" stroke-width="1.3"/>
+          <path d="M8.5 8.5l2.5 2.5" stroke="#7f9bb3" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <input type="text" placeholder="Search..."/>
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M2 2h7v7" stroke="#7f9bb3" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="icon-btn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+          <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        </svg>
+      </div>
+      <div class="icon-btn" style="position:relative;">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1.5a4 4 0 0 1 4 4v3l1.5 1.5H1.5L3 8.5v-3a4 4 0 0 1 4-4z" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M5.5 10.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3"/>
+        </svg>
+        <div style="position:absolute;top:4px;right:4px;width:5px;height:5px;border-radius:50%;background:var(--red);box-shadow:0 0 4px var(--red);"></div>
+      </div>
+      <div class="icon-btn">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.9 2.9l1.4 1.4M9.7 9.7l1.4 1.4M2.9 11.1l1.4-1.4M9.7 4.3l1.4-1.4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="user-chip">
+        <div class="user-avatar">O</div>
+        <div class="user-info">
+          <div class="user-role">Operator</div>
+          <div class="user-name">Commander</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================
+       MAIN CONTENT
+  =================================================================== -->
+  <main id="main">
+
+    <!-- ROW 1: AI Core | Hero | Live Feed -->
+    <div class="row row1">
+
+      <!-- AI CORE OVERVIEW -->
+      <div class="panel ai-core ai-core-panel">
+        <div class="panel-label" style="margin-bottom:8px;">AI Core Overview</div>
+
+        <div class="ai-core-item">
+          <div class="core-icon-wrap" style="background:rgba(0,229,255,0.12);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="5.5" stroke="#00e5ff" stroke-width="1.4"/>
+              <circle cx="8" cy="8" r="2.5" fill="#00e5ff" opacity="0.7"/>
+            </svg>
+          </div>
+          <div>
+            <div class="core-title">AI Core</div>
+            <div class="core-sub" style="color:var(--green);">Active</div>
+          </div>
+        </div>
+
+        <div class="ai-core-item">
+          <div class="core-icon-wrap" style="background:rgba(138,92,255,0.15);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <ellipse cx="8" cy="8" rx="5.5" ry="3.5" stroke="#8a5cff" stroke-width="1.4"/>
+              <circle cx="8" cy="8" r="1.8" fill="#8a5cff" opacity="0.8"/>
+            </svg>
+          </div>
+          <div>
+            <div class="core-title">Memory</div>
+            <div class="core-sub" style="color:var(--purple);">3,380 Stored</div>
+          </div>
+        </div>
+
+        <div class="ai-core-item">
+          <div class="core-icon-wrap" style="background:rgba(58,139,255,0.12);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="5" y="2" width="6" height="8" rx="3" stroke="#3a8bff" stroke-width="1.4"/>
+              <path d="M3 9a5 5 0 0 0 10 0" stroke="#3a8bff" stroke-width="1.3" stroke-linecap="round"/>
+              <line x1="8" y1="14" x2="8" y2="16" stroke="#3a8bff" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="core-title">Voice</div>
+            <div class="core-sub" style="color:var(--blue);">Online</div>
+          </div>
+        </div>
+
+        <div class="ai-core-item">
+          <div class="core-icon-wrap" style="background:rgba(255,176,32,0.12);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="5" width="12" height="8" rx="1.5" stroke="#ffb020" stroke-width="1.4"/>
+              <path d="M5 5V4a3 3 0 0 1 6 0v1" stroke="#ffb020" stroke-width="1.3"/>
+              <circle cx="8" cy="9" r="1.5" fill="#ffb020" opacity="0.8"/>
+            </svg>
+          </div>
+          <div>
+            <div class="core-title">Agents</div>
+            <div class="core-sub" style="color:var(--amber);">2 Running</div>
+          </div>
+        </div>
+
+        <div class="ai-core-item">
+          <div class="core-icon-wrap" style="background:rgba(46,229,157,0.1);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 8h3l2-5 3 10 2-5h2" stroke="#2ee59d" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="core-title">LLMs</div>
+            <div class="core-sub" style="color:var(--green);">4 Connected</div>
+          </div>
+        </div>
+
+        <div class="ai-core-item">
+          <div class="core-icon-wrap" style="background:rgba(0,229,255,0.08);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="#00e5ff" stroke-width="1.4"/>
+              <path d="M5 7h6M5 10h4" stroke="#00e5ff" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="core-title">System</div>
+            <div class="core-sub" style="color:var(--cyan-bright);">Optimal</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HERO PANEL -->
+      <div class="panel hero hero-panel">
+        <div class="hero-bg-glow"></div>
+
+        <!-- Animated ORB -->
+        <div class="orb-container">
+          <svg class="orb-svg" viewBox="0 0 200 200" fill="none">
+            <defs>
+              <radialGradient id="orbGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"   stop-color="#0a4a80" stop-opacity="0.8"/>
+                <stop offset="60%"  stop-color="#031428" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#020810" stop-opacity="0.2"/>
+              </radialGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+
+            <!-- Core sphere -->
+            <circle cx="100" cy="100" r="72" fill="url(#orbGrad)" stroke="rgba(0,200,255,0.3)" stroke-width="1"/>
+            <circle cx="100" cy="100" r="72" fill="none" stroke="rgba(0,200,255,0.15)" stroke-width="0.5"/>
+
+            <!-- Latitude lines -->
+            <ellipse cx="100" cy="100" rx="72" ry="20" stroke="rgba(0,200,255,0.18)" stroke-width="0.7" fill="none"/>
+            <ellipse cx="100" cy="100" rx="72" ry="42" stroke="rgba(0,200,255,0.12)" stroke-width="0.6" fill="none"/>
+            <ellipse cx="100" cy="100" rx="72" ry="60" stroke="rgba(0,200,255,0.1)"  stroke-width="0.5" fill="none"/>
+            <!-- Longitude -->
+            <ellipse cx="100" cy="100" rx="20" ry="72" stroke="rgba(0,200,255,0.18)" stroke-width="0.7" fill="none"/>
+            <ellipse cx="100" cy="100" rx="42" ry="72" stroke="rgba(0,200,255,0.12)" stroke-width="0.6" fill="none"/>
+
+            <!-- Outer rings -->
+            <g class="ring1">
+              <ellipse cx="100" cy="100" rx="92" ry="28" stroke="#00e5ff" stroke-width="1.2" fill="none" opacity="0.5"/>
+            </g>
+            <g class="ring2">
+              <ellipse cx="100" cy="100" rx="88" ry="38" stroke="#8a5cff" stroke-width="0.9" fill="none" opacity="0.4" transform="rotate(45 100 100)"/>
+            </g>
+            <g class="ring3">
+              <ellipse cx="100" cy="100" rx="96" ry="22" stroke="#19d3ff" stroke-width="0.7" fill="none" opacity="0.3" transform="rotate(-30 100 100)"/>
+            </g>
+
+            <!-- Orbiting dots -->
+            <g class="orb-dot">
+              <circle cx="192" cy="100" r="3.5" fill="#00e5ff" filter="url(#glow)"/>
+            </g>
+            <g class="orb-dot2">
+              <circle cx="8" cy="100" r="2.5" fill="#8a5cff" filter="url(#glow)"/>
+            </g>
+
+            <!-- Constellation dots on sphere -->
+            <circle cx="80" cy="78" r="1.5" fill="#00e5ff" opacity="0.7"/>
+            <circle cx="118" cy="85" r="1.2" fill="#00e5ff" opacity="0.5"/>
+            <circle cx="95" cy="115" r="1.5" fill="#8a5cff" opacity="0.6"/>
+            <circle cx="130" cy="105" r="1" fill="#00e5ff" opacity="0.4"/>
+            <circle cx="70" cy="108" r="1.3" fill="#19d3ff" opacity="0.5"/>
+            <line x1="80" y1="78" x2="118" y2="85" stroke="rgba(0,200,255,0.3)" stroke-width="0.5"/>
+            <line x1="118" y1="85" x2="130" y2="105" stroke="rgba(0,200,255,0.25)" stroke-width="0.5"/>
+            <line x1="80" y1="78" x2="70" y2="108" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+            <line x1="95" y1="115" x2="70" y2="108" stroke="rgba(0,200,255,0.2)" stroke-width="0.5"/>
+          </svg>
+        </div>
+
+        <div class="hero-title">JARVIS</div>
+        <div class="hero-sub">AI CORE</div>
+        <div class="hero-version">v3.0.0</div>
+      </div>
+
+      <!-- LIVE INTELLIGENCE FEED -->
+      <div class="panel live-feed feed-panel">
+        <div class="feed-header">
+          <div class="panel-label">Live Intelligence Feed</div>
+          <div class="live-badge"><div class="live-badge-dot"></div> LIVE</div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-icon-wrap" style="background:rgba(58,139,255,0.15);">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="5" r="3" stroke="#3a8bff" stroke-width="1.3"/>
+              <path d="M2 13a5 5 0 0 1 10 0" stroke="#3a8bff" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="feed-content">
+            <div class="feed-title">Design review with the product tea...</div>
+            <div class="feed-sub">Meeting</div>
+          </div>
+          <div class="feed-tag tag-info">INFO</div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-icon-wrap" style="background:rgba(255,176,32,0.12);">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 2l1.5 3h3.5l-2.8 2 1 3.5L7 8.5 4.8 10.5l1-3.5L3 5h3.5z" stroke="#ffb020" stroke-width="1.2" fill="none"/>
+            </svg>
+          </div>
+          <div class="feed-content">
+            <div class="feed-title">2 tasks are overdue — "Polish voic...</div>
+            <div class="feed-sub">Overdue</div>
+          </div>
+          <div class="feed-tag tag-warn">WARN</div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-icon-wrap" style="background:rgba(46,229,157,0.1);">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M2 4h10M2 7h7M2 10h5" stroke="#2ee59d" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="feed-content">
+            <div class="feed-title">3 pull requests are awaiting your rev...</div>
+            <div class="feed-sub">GitHub</div>
+          </div>
+          <div class="feed-tag tag-tip">TIP</div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-icon-wrap" style="background:rgba(46,229,157,0.1);">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="5.5" stroke="#2ee59d" stroke-width="1.3"/>
+              <path d="M7 4.5v3l2 1.5" stroke="#2ee59d" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="feed-content">
+            <div class="feed-title">Your deep-work block is 2–4 PM. No...</div>
+            <div class="feed-sub">Focus</div>
+          </div>
+          <div class="feed-tag tag-tip">TIP</div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-icon-wrap" style="background:rgba(0,229,255,0.1);">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <rect x="1" y="3" width="12" height="8" rx="1.5" stroke="#00e5ff" stroke-width="1.3"/>
+              <path d="M4 7h6M7 5v4" stroke="#00e5ff" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="feed-content">
+            <div class="feed-title">CPU usage at 15%</div>
+            <div class="feed-sub">System load nominal</div>
+          </div>
+          <div class="feed-tag tag-live">LIVE</div>
+        </div>
+
+        <div class="feed-item">
+          <div class="feed-icon-wrap" style="background:rgba(255,77,109,0.12);">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 2l5 9H2z" stroke="#ff4d6d" stroke-width="1.3" stroke-linejoin="round"/>
+              <path d="M7 6v2.5" stroke="#ff4d6d" stroke-width="1.3" stroke-linecap="round"/>
+              <circle cx="7" cy="10.5" r="0.5" fill="#ff4d6d"/>
+            </svg>
+          </div>
+          <div class="feed-content">
+            <div class="feed-title">2 tasks overdue</div>
+            <div class="feed-sub">Review the board and reschedule</div>
+          </div>
+          <div class="feed-tag tag-error">ERROR</div>
+        </div>
+
+        <div class="feed-view-all">View All Intelligence ›</div>
+      </div>
+    </div>
+
+    <!-- ROW 2: Agents | Timeline | Quick Commands -->
+    <div class="row row2">
+
+      <!-- ACTIVE AGENTS -->
+      <div class="panel agents-panel">
+        <div class="agents-header">
+          <div class="panel-label">Active Agents</div>
+          <div class="view-all">View All ›</div>
+        </div>
+        <div class="agents-grid" id="agentsGrid">
+
+          <div class="agent-card">
+            <div class="agent-card-top">
+              <div class="agent-icon-box" style="background:rgba(0,229,255,0.12);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M3 3h10M3 7h7M3 11h5" stroke="#00e5ff" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="agent-name">Coding Agent</div>
+            </div>
+            <div class="agent-status-row">
+              <div class="status-dot-sm dot-green"></div>
+              <div class="agent-status-text" style="color:var(--green);">Active</div>
+            </div>
+            <div class="agent-sparkline" id="spark1"></div>
+          </div>
+
+          <div class="agent-card">
+            <div class="agent-card-top">
+              <div class="agent-icon-box" style="background:rgba(58,139,255,0.12);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="6" stroke="#3a8bff" stroke-width="1.4"/>
+                  <path d="M5 8h6M8 5v6" stroke="#3a8bff" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="agent-name">Research Agent</div>
+            </div>
+            <div class="agent-status-row">
+              <div class="status-dot-sm dot-amber"></div>
+              <div class="agent-status-text" style="color:var(--amber);">Standby</div>
+            </div>
+            <div class="agent-sparkline" id="spark2"></div>
+          </div>
+
+          <div class="agent-card">
+            <div class="agent-card-top">
+              <div class="agent-icon-box" style="background:rgba(138,92,255,0.12);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <ellipse cx="8" cy="8" rx="5" ry="3.5" stroke="#8a5cff" stroke-width="1.4"/>
+                  <circle cx="8" cy="8" r="2" fill="#8a5cff" opacity="0.7"/>
+                </svg>
+              </div>
+              <div class="agent-name">Memory Agent</div>
+            </div>
+            <div class="agent-status-row">
+              <div class="status-dot-sm dot-green"></div>
+              <div class="agent-status-text" style="color:var(--green);">Active</div>
+            </div>
+            <div class="agent-sparkline" id="spark3"></div>
+          </div>
+
+          <div class="agent-card">
+            <div class="agent-card-top">
+              <div class="agent-icon-box" style="background:rgba(255,176,32,0.1);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="8" r="5.5" stroke="#ffb020" stroke-width="1.4"/>
+                  <path d="M5 8l2 2 4-4" stroke="#ffb020" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="agent-name">Browser Agent</div>
+            </div>
+            <div class="agent-status-row">
+              <div class="status-dot-sm dot-amber"></div>
+              <div class="agent-status-text" style="color:var(--amber);">Standby</div>
+            </div>
+            <div class="agent-sparkline" id="spark4"></div>
+          </div>
+
+          <div class="agent-card">
+            <div class="agent-card-top">
+              <div class="agent-icon-box" style="background:rgba(0,229,255,0.1);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 4h12M2 8h9M2 12h6" stroke="#19d3ff" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="agent-name">Task Agent</div>
+            </div>
+            <div class="agent-status-row">
+              <div class="status-dot-sm dot-amber"></div>
+              <div class="agent-status-text" style="color:var(--amber);">Standby</div>
+            </div>
+            <div class="agent-sparkline" id="spark5"></div>
+          </div>
+
+          <div class="agent-card">
+            <div class="agent-card-top">
+              <div class="agent-icon-box" style="background:rgba(46,229,157,0.1);">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="#2ee59d" stroke-width="1.4"/>
+                  <path d="M5 8l2 2 4-4" stroke="#2ee59d" stroke-width="1.4" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="agent-name">System Agent</div>
+            </div>
+            <div class="agent-status-row">
+              <div class="status-dot-sm dot-green"></div>
+              <div class="agent-status-text" style="color:var(--green);">Active</div>
+            </div>
+            <div class="agent-sparkline" id="spark6"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MISSION TIMELINE -->
+      <div class="panel timeline-panel">
+        <div class="timeline-header">
+          <div class="panel-label">Mission Timeline</div>
+          <div class="timeline-today">Today <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M2 3l2 2 2-2" stroke="#7f9bb3" stroke-width="1.2"/></svg></div>
+        </div>
+        <div class="timeline-list">
+          <div class="timeline-item">
+            <div class="tl-time">09:30<br>am</div>
+            <div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--green);box-shadow:0 0 5px var(--green);"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">Daily Standup</div>
+              <div class="tl-sub">Team sync</div>
+            </div>
+            <div class="tl-status tl-done">Done</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-time">11:00<br>am</div>
+            <div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--cyan-bright);box-shadow:0 0 5px var(--cyan-bright);animation:dotBlink 1s infinite;"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">Finalize HUD panel spacing</div>
+              <div class="tl-sub">Design</div>
+            </div>
+            <div class="tl-status tl-soon">In 42 min</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-time">02:00<br>pm</div>
+            <div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--amber);box-shadow:0 0 5px var(--amber);"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">Deep-work block: Voice pipeline</div>
+              <div class="tl-sub">Focus</div>
+            </div>
+            <div class="tl-status tl-focus">In 2h 42m</div>
+          </div>
+          <div class="timeline-item">
+            <div class="tl-time">04:30<br>pm</div>
+            <div class="tl-dot-wrap"><div class="tl-dot" style="background:var(--red);box-shadow:0 0 5px var(--red);"></div></div>
+            <div class="tl-content">
+              <div class="tl-title">Design Review — Command Center V1</div>
+              <div class="tl-sub">Review</div>
+            </div>
+            <div class="tl-status tl-overdue">In 5h 12m</div>
+          </div>
+        </div>
+        <div class="timeline-footer">View Full Schedule ›</div>
+      </div>
+
+      <!-- QUICK COMMANDS -->
+      <div class="panel commands-panel">
+        <div class="panel-label">Quick Commands</div>
+        <div class="commands-list">
+          <button class="cmd-btn" onclick="showToast('Start New Task — coming soon')">
+            <div class="cmd-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M8 5v6M5 8h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            Start New Task
+          </button>
+          <button class="cmd-btn coming-soon" onclick="showToast('Calendar not implemented in this MVP')">
+            <div class="cmd-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="1" y="3" width="14" height="11" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M1 7h14" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M5 1v4M11 1v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            Open Calendar
+          </button>
+          <button class="cmd-btn coming-soon" onclick="showToast('Voice not implemented in this MVP')">
+            <div class="cmd-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="5" y="2" width="6" height="8" rx="3" stroke="currentColor" stroke-width="1.4"/>
+                <path d="M3 9a5 5 0 0 0 10 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            Start Voice Chat
+          </button>
+          <button class="cmd-btn coming-soon" onclick="showToast('Workflows not implemented in this MVP')">
+            <div class="cmd-icon">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8a5 5 0 0 1 10 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M3 8l2 3M13 8l-2 3M5 11h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </div>
+            Run Workflow
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: System Monitor | Memory Insights | LLM Status -->
+    <div class="row row3">
+
+      <!-- SYSTEM MONITOR -->
+      <div class="panel monitor-panel">
+        <div class="panel-label">System Monitor</div>
+        <div class="gauges-row">
+          <!-- CPU -->
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(0,180,255,0.1)" stroke-width="8"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#00e5ff" stroke-width="8"
+                      stroke-dasharray="201.06" stroke-dashoffset="171" stroke-linecap="round"
+                      transform="rotate(-90 40 40)"
+                      style="filter:drop-shadow(0 0 4px #00e5ff)"/>
+              <text x="40" y="36" text-anchor="middle" font-family="Orbitron,sans-serif" font-size="12" font-weight="700" fill="#e8f6ff">15%</text>
+              <text x="40" y="48" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="8" fill="#7f9bb3">CPU</text>
+            </svg>
+          </div>
+          <!-- RAM -->
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(138,92,255,0.1)" stroke-width="8"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#8a5cff" stroke-width="8"
+                      stroke-dasharray="201.06" stroke-dashoffset="108" stroke-linecap="round"
+                      transform="rotate(-90 40 40)"
+                      style="filter:drop-shadow(0 0 4px #8a5cff)"/>
+              <text x="40" y="36" text-anchor="middle" font-family="Orbitron,sans-serif" font-size="12" font-weight="700" fill="#e8f6ff">54%</text>
+              <text x="40" y="48" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="8" fill="#7f9bb3">RAM</text>
+            </svg>
+          </div>
+          <!-- Disk -->
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,176,32,0.1)" stroke-width="8"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#ffb020" stroke-width="8"
+                      stroke-dasharray="201.06" stroke-dashoffset="120" stroke-linecap="round"
+                      transform="rotate(-90 40 40)"
+                      style="filter:drop-shadow(0 0 4px #ffb020)"/>
+              <text x="40" y="36" text-anchor="middle" font-family="Orbitron,sans-serif" font-size="12" font-weight="700" fill="#e8f6ff">40%</text>
+              <text x="40" y="48" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="8" fill="#7f9bb3">Disk</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- MEMORY INSIGHTS -->
+      <div class="panel memory-panel">
+        <div class="panel-label">Memory Insights</div>
+        <div class="memory-body">
+          <!-- Constellation SVG -->
+          <svg class="constellation" viewBox="0 0 120 90" fill="none">
+            <defs>
+              <radialGradient id="conGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.15"/>
+                <stop offset="100%" stop-color="transparent"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="60" cy="45" rx="55" ry="40" fill="url(#conGrad)"/>
+            <!-- Nodes -->
+            <circle cx="30" cy="25" r="3" fill="#00e5ff" opacity="0.8"/>
+            <circle cx="60" cy="15" r="2" fill="#8a5cff" opacity="0.7"/>
+            <circle cx="90" cy="30" r="3" fill="#00e5ff" opacity="0.7"/>
+            <circle cx="75" cy="55" r="2.5" fill="#2ee59d" opacity="0.8"/>
+            <circle cx="45" cy="65" r="3" fill="#00e5ff" opacity="0.6"/>
+            <circle cx="20" cy="55" r="2" fill="#8a5cff" opacity="0.6"/>
+            <circle cx="60" cy="45" r="4" fill="#00e5ff" opacity="0.9" style="filter:drop-shadow(0 0 4px #00e5ff)"/>
+            <circle cx="100" cy="60" r="2" fill="#19d3ff" opacity="0.5"/>
+            <!-- Edges -->
+            <line x1="30" y1="25" x2="60" y2="15" stroke="#00e5ff" stroke-width="0.5" opacity="0.3"/>
+            <line x1="60" y1="15" x2="90" y2="30" stroke="#00e5ff" stroke-width="0.5" opacity="0.3"/>
+            <line x1="90" y1="30" x2="75" y2="55" stroke="#2ee59d" stroke-width="0.5" opacity="0.3"/>
+            <line x1="75" y1="55" x2="45" y2="65" stroke="#00e5ff" stroke-width="0.5" opacity="0.25"/>
+            <line x1="45" y1="65" x2="20" y2="55" stroke="#8a5cff" stroke-width="0.5" opacity="0.25"/>
+            <line x1="20" y1="55" x2="30" y2="25" stroke="#00e5ff" stroke-width="0.5" opacity="0.2"/>
+            <line x1="60" y1="45" x2="30" y2="25" stroke="#00e5ff" stroke-width="0.7" opacity="0.4"/>
+            <line x1="60" y1="45" x2="90" y2="30" stroke="#00e5ff" stroke-width="0.7" opacity="0.4"/>
+            <line x1="60" y1="45" x2="75" y2="55" stroke="#2ee59d" stroke-width="0.6" opacity="0.35"/>
+            <line x1="60" y1="45" x2="45" y2="65" stroke="#00e5ff" stroke-width="0.6" opacity="0.3"/>
+            <line x1="60" y1="45" x2="100" y2="60" stroke="#19d3ff" stroke-width="0.5" opacity="0.25"/>
+          </svg>
+
+          <div class="memory-stats">
+            <div class="mem-stat">
+              <div class="mem-stat-val">3,380</div>
+              <div class="mem-stat-label">Memories</div>
+            </div>
+            <div class="mem-stat">
+              <div class="mem-stat-val">22</div>
+              <div class="mem-stat-label">Session Turns</div>
+            </div>
+            <div class="mem-stat">
+              <div class="mem-stat-val">14</div>
+              <div class="mem-stat-label">Tool Calls</div>
+            </div>
+          </div>
+        </div>
+        <div class="memory-footer">View Memory Map ›</div>
+      </div>
+
+      <!-- LLM STATUS -->
+      <div class="panel llm-panel">
+        <div class="llm-header">
+          <div class="panel-label">LLM Status</div>
+          <div class="llm-connected">
+            <div class="status-dot-sm dot-green" style="width:5px;height:5px;"></div>
+            4 Connected
+          </div>
+        </div>
+        <div class="llm-grid">
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(255,140,0,0.15);">🤖</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">Claude</div>
+              <div class="llm-tile-status connected-text">Connected</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(16,163,127,0.15);">🟢</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">OpenAI</div>
+              <div class="llm-tile-status connected-text">Connected</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(66,133,244,0.15);">💎</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">Gemini</div>
+              <div class="llm-tile-status notlinked-text">Not Linked</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(138,92,255,0.15);">⚡</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">Groq</div>
+              <div class="llm-tile-status connected-text">Connected</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(0,200,255,0.12);">🌐</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">OpenRouter</div>
+              <div class="llm-tile-status connected-text">Connected</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(255,255,255,0.06);">🦙</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">Ollama</div>
+              <div class="llm-tile-status notlinked-text">Not Linked</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(255,140,0,0.1);">🛠️</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">Claude Code</div>
+              <div class="llm-tile-status notlinked-text">Not Linked</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(80,160,255,0.12);">✏️</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">Cursor</div>
+              <div class="llm-tile-status notlinked-text">No Models</div>
+            </div>
+          </div>
+
+          <div class="llm-tile">
+            <div class="llm-tile-icon" style="background:rgba(255,255,255,0.06);">🐙</div>
+            <div class="llm-tile-info">
+              <div class="llm-tile-name">Copilot</div>
+              <div class="llm-tile-status notlinked-text">Not Linked</div>
+            </div>
+          </div>
+        </div>
+        <div class="llm-footer">Manage Providers ›</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===================================================================
+       BOTTOM BAR
+  =================================================================== -->
+  <footer id="bottombar">
+    <div class="bar-chips">
+      <div class="bar-chip">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+          <path d="M5.5 1a4 4 0 0 1 0 8" stroke="#7f9bb3" stroke-width="1.2"/>
+          <circle cx="5.5" cy="5" r="1.5" fill="#7f9bb3"/>
+        </svg>
+        <span><strong style="color:var(--text-primary)">Location</strong> &nbsp;Shimber, Pak...</span>
+      </div>
+      <div class="bar-chip">
+        <svg width="13" height="11" viewBox="0 0 13 11" fill="none">
+          <path d="M1 7a3 3 0 0 1 5-2.2A3 3 0 0 1 12 7" stroke="#7f9bb3" stroke-width="1.2"/>
+          <path d="M3 8.5a2 2 0 0 1 3-1.3A2 2 0 0 1 10 8.5" stroke="#7f9bb3" stroke-width="1"/>
+          <circle cx="6.5" cy="10" r="1" fill="#7f9bb3"/>
+        </svg>
+        <span>☁ <strong style="color:var(--text-primary)">Weather</strong> &nbsp;29°C Overcast</span>
+      </div>
+      <div class="bar-chip">
+        <svg width="13" height="11" viewBox="0 0 13 11" fill="none">
+          <path d="M1.5 5.5a7 7 0 0 1 10 0" stroke="#7f9bb3" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M3.5 7.5a4 4 0 0 1 6 0" stroke="#7f9bb3" stroke-width="1.1" stroke-linecap="round"/>
+          <circle cx="6.5" cy="9.5" r="1" fill="#7f9bb3"/>
+        </svg>
+        <span><strong style="color:var(--text-primary)">Network</strong> &nbsp;Excellent</span>
+      </div>
+    </div>
+
+    <!-- TALK TO JARVIS pill -->
+    <div class="talk-pill coming-soon" onclick="showToast('Voice not implemented in this MVP')">
+      <div class="talk-wave" id="talkWave"></div>
+      <div class="talk-text">
+        <div class="talk-main">TALK TO JARVIS</div>
+        <div class="talk-sub">I am listening...</div>
+      </div>
+      <div class="talk-wave" id="talkWave2"></div>
+    </div>
+
+    <button class="exec-btn" onclick="showToast('Executive Briefing — connect backend to enable')">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M3 7l3 3 5-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      Executive Briefing
+    </button>
+  </footer>
+
+</div><!-- #app -->
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+/* =====================================================================
+   LIVE CLOCK
+===================================================================== */
+function updateClock() {
+  const now = new Date();
+  const days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const day    = days[now.getDay()];
+  const date   = now.getDate();
+  const month  = months[now.getMonth()];
+  const year   = now.getFullYear();
+
+  let h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  const pad = n => String(n).padStart(2,'0');
+
+  document.getElementById('clockDate').textContent = `${day}, ${date} ${month} ${year}`;
+  document.getElementById('clockTime').textContent = `${pad(h)}:${pad(m)}:${pad(s)} ${ampm}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* =====================================================================
+   WAVEFORM BARS — sidebar voice
+===================================================================== */
+(function buildWave() {
+  const container = document.getElementById('voiceWave');
+  if (!container) return;
+  const heights = [8,12,18,14,10,16,20,15,9,13,18,12,8,16,10];
+  const durations = [0.6,0.9,0.7,1.1,0.8,0.65,0.95,0.75,1.0,0.7,0.85,0.6,1.1,0.75,0.9];
+  heights.forEach((h, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    bar.style.setProperty('--h', h + 'px');
+    bar.style.setProperty('--dur', durations[i] + 's');
+    bar.style.animationDelay = (i * 0.06) + 's';
+    container.appendChild(bar);
+  });
+})();
+
+/* =====================================================================
+   WAVEFORM BARS — bottom bar talk pill
+===================================================================== */
+function buildTalkWave(id, count) {
+  const container = document.getElementById(id);
+  if (!container) return;
+  const durations = [0.7,0.5,0.9,0.6,0.8,0.65,0.75,0.55,0.85,0.7];
+  const heights   = [8,12,16,10,14,18,12,9,15,11];
+  for (let i = 0; i < count; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'talk-bar';
+    bar.style.setProperty('--h', heights[i % heights.length] + 'px');
+    bar.style.setProperty('--dur', durations[i % durations.length] + 's');
+    bar.style.animationDelay = (i * 0.08) + 's';
+    container.appendChild(bar);
+  }
+}
+buildTalkWave('talkWave', 10);
+buildTalkWave('talkWave2', 10);
+
+/* =====================================================================
+   AGENT SPARKLINES
+===================================================================== */
+(function buildSparklines() {
+  const colors = ['#00e5ff','#3a8bff','#8a5cff','#ffb020','#19d3ff','#2ee59d'];
+  for (let n = 1; n <= 6; n++) {
+    const el = document.getElementById('spark' + n);
+    if (!el) continue;
+    const barCount = 18;
+    const color = colors[n-1];
+    const delays = Array.from({length: barCount}, (_,i) => (i * 0.05).toFixed(2));
+    const maxHs  = Array.from({length: barCount}, () => (4 + Math.random() * 14).toFixed(1));
+    const durs   = Array.from({length: barCount}, () => (0.5 + Math.random() * 0.6).toFixed(2));
+
+    for (let i = 0; i < barCount; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'spark-bar';
+      bar.style.background = color;
+      bar.style.setProperty('--sh', maxHs[i] + 'px');
+      bar.style.setProperty('--sd', durs[i] + 's');
+      bar.style.animationDelay = delays[i] + 's';
+      el.appendChild(bar);
+    }
+  }
+})();
+
+/* =====================================================================
+   TOAST
+===================================================================== */
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+/* =====================================================================
+   NAV ITEM ACTIVE STATE
+===================================================================== */
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
