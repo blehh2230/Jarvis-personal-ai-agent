@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="api.js"></script>
   <style>
     /* =====================================================================
        DESIGN TOKENS & RESET
@@ -861,6 +862,520 @@
       .voice-card, .focus-btn { display: none; }
       .row { flex-wrap: wrap; }
     }
+    /* =====================================================================
+       HUD TASK COMMAND CENTER MODAL
+    ===================================================================== */
+    .task-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 10, 24, 0.86);
+      backdrop-filter: blur(12px);
+      z-index: 9000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    .task-modal-backdrop.active {
+      display: flex;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .task-modal-dialog {
+      background: rgba(6, 20, 42, 0.96);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--panel-radius);
+      box-shadow: 0 0 40px rgba(0, 229, 255, 0.2), inset 0 1px 0 rgba(255,255,255,0.06);
+      width: 920px;
+      max-width: 95vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      animation: modalZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalZoomIn {
+      from { transform: scale(0.96); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .task-modal-dialog::before, .task-modal-dialog::after {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      border-color: var(--cyan-bright);
+      border-style: solid;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .task-modal-dialog::before { top: 0; left: 0; border-width: 2px 0 0 2px; }
+    .task-modal-dialog::after  { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+    .task-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(3, 14, 30, 0.9);
+      position: relative;
+    }
+    .task-modal-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .task-modal-badge {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.1em;
+      border: 1px solid rgba(0, 229, 255, 0.4);
+      background: rgba(0, 229, 255, 0.1);
+      color: var(--cyan-bright);
+    }
+    .task-modal-title {
+      font-family: var(--font-hud);
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      color: var(--text-primary);
+      text-transform: uppercase;
+    }
+    .task-modal-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .task-modal-close {
+      background: transparent;
+      border: 1px solid rgba(0, 200, 255, 0.3);
+      border-radius: 4px;
+      color: var(--cyan-dim);
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      font-family: var(--font-hud);
+      transition: all 0.2s;
+    }
+    .task-modal-close:hover {
+      border-color: var(--cyan-bright);
+      color: var(--cyan-bright);
+      background: rgba(0, 229, 255, 0.12);
+      box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+
+    .task-modal-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 8px 18px 0;
+      background: rgba(3, 12, 26, 0.7);
+      border-bottom: 1px solid var(--panel-border);
+    }
+    .task-tab-btn {
+      padding: 7px 16px;
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-bottom: none;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      background: transparent;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .task-tab-btn:hover {
+      color: var(--cyan-dim);
+      background: rgba(0, 200, 255, 0.05);
+    }
+    .task-tab-btn.active {
+      color: var(--cyan-bright);
+      background: rgba(6, 20, 42, 0.98);
+      border-color: var(--panel-border);
+      box-shadow: 0 -2px 10px rgba(0, 229, 255, 0.1);
+    }
+
+    .task-modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0,200,255,0.3) transparent;
+    }
+    .task-view-panel {
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .task-view-panel.active {
+      display: flex;
+    }
+
+    /* Directive Form */
+    .directive-box {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .directive-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .directive-label {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--text-label);
+      text-transform: uppercase;
+    }
+    .directive-counter {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .directive-textarea {
+      width: 100%;
+      min-height: 95px;
+      background: rgba(0, 15, 35, 0.75);
+      border: 1px solid rgba(0, 200, 255, 0.25);
+      border-radius: 6px;
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 14px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .directive-textarea:focus {
+      border-color: var(--cyan-bright);
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+      background: rgba(0, 20, 45, 0.85);
+    }
+    .directive-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .chip-btn {
+      padding: 4px 10px;
+      background: rgba(0, 180, 255, 0.08);
+      border: 1px solid rgba(0, 200, 255, 0.2);
+      border-radius: 12px;
+      color: var(--cyan-dim);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: var(--font-body);
+    }
+    .chip-btn:hover {
+      border-color: var(--cyan-bright);
+      color: var(--text-primary);
+      background: rgba(0, 229, 255, 0.18);
+    }
+
+    .directive-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .btn-hud-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, rgba(0, 200, 255, 0.25) 0%, rgba(0, 100, 220, 0.2) 100%);
+      border: 1px solid var(--cyan-bright);
+      border-radius: 6px;
+      color: var(--cyan-bright);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-shadow: 0 0 6px var(--cyan-glow);
+    }
+    .btn-hud-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(0, 229, 255, 0.45) 0%, rgba(0, 140, 255, 0.35) 100%);
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.45);
+      color: #fff;
+    }
+    .btn-hud-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      border-color: rgba(0, 200, 255, 0.2);
+      box-shadow: none;
+    }
+    .btn-hud-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: rgba(0, 20, 45, 0.4);
+      border: 1px solid rgba(0, 200, 255, 0.2);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-hud-secondary:hover {
+      border-color: var(--cyan-dim);
+      color: var(--cyan-dim);
+      background: rgba(0, 200, 255, 0.08);
+    }
+
+    .btn-hud-execute {
+      background: linear-gradient(135deg, rgba(46, 229, 157, 0.3) 0%, rgba(0, 180, 140, 0.2) 100%);
+      border-color: var(--green);
+      color: var(--green);
+      text-shadow: 0 0 6px rgba(46, 229, 157, 0.4);
+    }
+    .btn-hud-execute:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(46, 229, 157, 0.5) 0%, rgba(0, 200, 150, 0.35) 100%);
+      box-shadow: 0 0 22px rgba(46, 229, 157, 0.5);
+      color: #fff;
+    }
+
+    /* Error & Alert Banner */
+    .hud-alert-banner {
+      display: none;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--red);
+      background: rgba(255, 77, 109, 0.12);
+      color: #ffb8c5;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .hud-alert-banner.active {
+      display: flex;
+    }
+
+    /* Mission Pipeline Components */
+    .mission-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(0, 20, 45, 0.5);
+      border: 1px solid var(--panel-border);
+      border-radius: 6px;
+    }
+    .mission-id-pill {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      color: var(--cyan-dim);
+      letter-spacing: 0.08em;
+    }
+    .mission-status-pill {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .status-queued    { background: rgba(255,176,32,0.15); border: 1px solid var(--amber); color: var(--amber); }
+    .status-running   { background: rgba(0,229,255,0.15); border: 1px solid var(--cyan-bright); color: var(--cyan-bright); animation: dotBlink 1.2s infinite; }
+    .status-planned   { background: rgba(58,139,255,0.15); border: 1px solid var(--blue); color: var(--cyan-bright); }
+    .status-completed { background: rgba(46,229,157,0.18); border: 1px solid var(--green); color: var(--green); }
+    .status-blocked   { background: rgba(255,176,32,0.2); border: 1px solid var(--amber); color: var(--amber); }
+    .status-failed    { background: rgba(255,77,109,0.2); border: 1px solid var(--red); color: var(--red); }
+
+    .summary-box {
+      padding: 12px 14px;
+      background: rgba(0, 30, 60, 0.4);
+      border-left: 3px solid var(--cyan-bright);
+      border-radius: 0 6px 6px 0;
+      color: var(--text-primary);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .summary-box-title {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--cyan-bright);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    /* Steps list */
+    .steps-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .step-card {
+      background: rgba(0, 20, 45, 0.55);
+      border: 1px solid rgba(0, 200, 255, 0.18);
+      border-radius: 7px;
+      padding: 12px 14px;
+      transition: all 0.25s;
+      position: relative;
+    }
+    .step-card.step-running {
+      border-color: var(--cyan-bright);
+      background: rgba(0, 30, 65, 0.7);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+    }
+    .step-card.step-completed {
+      border-color: rgba(46, 229, 157, 0.4);
+    }
+    .step-card.step-blocked {
+      border-color: rgba(255, 176, 32, 0.5);
+    }
+    .step-card.step-failed {
+      border-color: rgba(255, 77, 109, 0.6);
+    }
+    .step-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .step-num {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      color: var(--cyan-bright);
+      letter-spacing: 0.12em;
+    }
+    .step-title-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+    .step-expected-box {
+      margin-top: 6px;
+      padding: 6px 10px;
+      background: rgba(0, 10, 25, 0.4);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .step-expected-label {
+      color: var(--cyan-dim);
+      font-family: var(--font-hud);
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-right: 6px;
+    }
+    .step-result-box {
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: rgba(0, 15, 30, 0.7);
+      border-radius: 5px;
+      border: 1px solid rgba(0, 200, 255, 0.12);
+      font-size: 12px;
+      color: #e2f1fd;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .step-citations-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 8px;
+      align-items: center;
+    }
+    .citation-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      background: rgba(0, 180, 255, 0.1);
+      border: 1px solid rgba(0, 200, 255, 0.25);
+      border-radius: 4px;
+      color: var(--cyan-bright);
+      font-size: 10px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .citation-tag:hover {
+      background: rgba(0, 229, 255, 0.2);
+      border-color: var(--cyan-bright);
+      text-decoration: underline;
+    }
+
+    /* History table / cards */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .history-item-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(0, 20, 45, 0.4);
+      border: 1px solid rgba(0, 200, 255, 0.15);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .history-item-card:hover {
+      border-color: var(--cyan-bright);
+      background: rgba(0, 30, 65, 0.6);
+      transform: translateX(2px);
+    }
+    .history-item-instruction {
+      font-size: 12px;
+      color: var(--text-primary);
+      font-weight: 500;
+      max-width: 550px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .history-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Radar / Spinner animations */
+    .hud-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(0, 229, 255, 0.25);
+      border-top-color: var(--cyan-bright);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -918,14 +1433,14 @@
         </div>
         Agents
       </div>
-      <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
+      <div class="nav-item" id="navTasks" onclick="openTaskModal()">
         <div class="nav-icon">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M2 4h12M2 8h9M2 12h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
         </div>
         Tasks
-        <span class="nav-badge amber">3</span>
+        <span class="nav-badge amber" id="tasksBadge">0</span>
       </div>
       <div class="nav-item coming-soon" onclick="showToast('Not implemented in this MVP')">
         <div class="nav-icon">
@@ -1020,9 +1535,9 @@
        TOP BAR
   =================================================================== -->
   <header id="topbar">
-    <div class="sys-status-pill">
-      <div class="status-dot"></div>
-      SYSTEM STATUS &bull; OPTIMAL
+    <div class="sys-status-pill" id="sysStatusPill" onclick="checkBackendHealth(true)" style="cursor:pointer;" title="Click to refresh JARVIS backend status">
+      <div class="status-dot" id="sysStatusDot"></div>
+      <span id="sysStatusText">JARVIS CORE &bull; CONNECTING</span>
     </div>
 
     <div class="topbar-clock">
@@ -1036,7 +1551,7 @@
           <circle cx="5.5" cy="5.5" r="4" stroke="#7f9bb3" stroke-width="1.3"/>
           <path d="M8.5 8.5l2.5 2.5" stroke="#7f9bb3" stroke-width="1.3" stroke-linecap="round"/>
         </svg>
-        <input type="text" placeholder="Search..."/>
+        <input type="text" id="topbarSearchInput" placeholder="Enter task directive or search..."/>
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
           <path d="M2 2h7v7" stroke="#7f9bb3" stroke-width="1.2" stroke-linecap="round"/>
         </svg>
@@ -1490,7 +2005,7 @@
       <div class="panel commands-panel">
         <div class="panel-label">Quick Commands</div>
         <div class="commands-list">
-          <button class="cmd-btn" onclick="showToast('Start New Task — coming soon')">
+          <button class="cmd-btn" id="btnStartNewTask" onclick="openTaskModal()">
             <div class="cmd-icon">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4"/>
@@ -1760,7 +2275,7 @@
       <div class="talk-wave" id="talkWave2"></div>
     </div>
 
-    <button class="exec-btn" onclick="showToast('Executive Briefing — connect backend to enable')">
+    <button class="exec-btn" onclick="openExecutiveBriefingTask()">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M3 7l3 3 5-5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
       </svg>
@@ -1772,6 +2287,180 @@
 
 <!-- Toast -->
 <div id="toast"></div>
+
+<!-- =====================================================================
+     HUD TASK OPERATIONS COMMAND CENTER MODAL
+===================================================================== -->
+<div class="task-modal-backdrop" id="taskModalBackdrop">
+  <div class="task-modal-dialog" id="taskModalDialog">
+    <div class="task-modal-header">
+      <div class="task-modal-title-wrap">
+        <span class="task-modal-badge">OPS CORE</span>
+        <div>
+          <div class="task-modal-title">MISSION DISPATCH // TASK COMMAND CENTER</div>
+          <div class="task-modal-sub">Autonomous AI Agent Planner &amp; Executor &bull; Groq + Tavily</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="mission-status-pill status-queued" id="modalStatusBadge">IDLE</div>
+        <button class="task-modal-close" id="btnModalClose" onclick="closeTaskModal()" title="Close (Esc)">&times;</button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="task-modal-tabs">
+      <button class="task-tab-btn active" id="tabBtnNew" onclick="switchTaskTab('new')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        New Mission
+      </button>
+      <button class="task-tab-btn" id="tabBtnPipeline" onclick="switchTaskTab('pipeline')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 3h10M1 6h7M1 9h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        Active Pipeline
+        <span class="nav-badge" id="pipelineStepsBadge" style="display:none;font-size:8px;padding:0 4px;">0</span>
+      </button>
+      <button class="task-tab-btn" id="tabBtnHistory" onclick="switchTaskTab('history')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><path d="M6 3.5v2.8l1.8 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Mission Archive
+      </button>
+    </div>
+
+    <div class="task-modal-body">
+      <!-- Alert / Error Banner -->
+      <div class="hud-alert-banner" id="modalAlertBanner">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;margin-top:2px;">
+          <path d="M8 2l6 11H2L8 2z" stroke="#ff4d6d" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M8 6v3M8 11.5v.5" stroke="#ff4d6d" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <div style="flex:1;">
+          <strong style="color:var(--red);font-family:var(--font-hud);">SYSTEM ALERT:</strong>
+          <span id="modalAlertText">An error occurred.</span>
+        </div>
+        <button style="background:transparent;border:none;color:#ff8da1;cursor:pointer;font-size:14px;" onclick="hideModalAlert()">&times;</button>
+      </div>
+
+      <!-- VIEW 1: New Mission -->
+      <div class="task-view-panel active" id="viewNewMission">
+        <div class="directive-box">
+          <div class="directive-label-row">
+            <span class="directive-label">DIRECTIVE / TASK INSTRUCTION</span>
+            <span class="directive-counter" id="charCounter">0 / 2000 chars (min 5)</span>
+          </div>
+          <textarea
+            class="directive-textarea"
+            id="taskInstructionInput"
+            placeholder="Enter mission directive for JARVIS (e.g. 'Research AI engineering internships in Bengaluru and summarize eligibility requirements and deadlines')..."
+          ></textarea>
+        </div>
+
+        <div>
+          <div class="directive-label" style="margin-bottom:6px;">QUICK PROTOCOLS &amp; PRESETS</div>
+          <div class="directive-chips">
+            <button class="chip-btn" onclick="populateDirective('Research AI engineering internships in Bengaluru and summarize eligibility requirements')">
+              🎯 AI Internships Bengaluru
+            </button>
+            <button class="chip-btn" onclick="populateDirective('Research emerging autonomous AI agent frameworks and summarize core capabilities')">
+              🤖 AI Agent Frameworks
+            </button>
+            <button class="chip-btn" onclick="populateDirective('Prepare executive briefing summarizing recent project status and deliverables')">
+              📋 Executive Briefing
+            </button>
+            <button class="chip-btn" onclick="populateDirective('Analyze market trends in open-source LLM inference engines and compare benchmarks')">
+              📊 LLM Inference Benchmarks
+            </button>
+          </div>
+        </div>
+
+        <div class="directive-actions">
+          <button class="btn-hud-primary" id="btnGeneratePlan" onclick="handleCreateTask()">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" id="btnPlanIcon">
+              <path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span id="btnGeneratePlanText">GENERATE AI PLAN</span>
+          </button>
+          <button class="btn-hud-secondary" onclick="switchTaskTab('history')">
+            VIEW MISSION ARCHIVE
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW 2: Active Pipeline -->
+      <div class="task-view-panel" id="viewActivePipeline">
+        <!-- Empty State -->
+        <div id="pipelineEmptyState" style="text-align:center;padding:40px 20px;color:var(--text-muted);">
+          <div style="font-size:32px;margin-bottom:10px;opacity:0.6;">⚡</div>
+          <div style="font-family:var(--font-hud);font-size:12px;color:var(--cyan-dim);margin-bottom:6px;">NO ACTIVE MISSION LOADED</div>
+          <div style="font-size:12px;margin-bottom:14px;">Dispatch a directive or select a mission from archive to view pipeline.</div>
+          <button class="btn-hud-primary" onclick="switchTaskTab('new')">CREATE NEW MISSION</button>
+        </div>
+
+        <!-- Populated State -->
+        <div id="pipelinePopulatedState" style="display:none;flex-direction:column;gap:14px;">
+          <!-- Meta Bar -->
+          <div class="mission-meta-bar">
+            <div>
+              <span class="directive-label" style="margin-right:8px;">MISSION DIRECTIVE:</span>
+              <strong style="color:var(--text-primary);font-size:13px;" id="pipelineInstructionText">...</strong>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="mission-id-pill" id="pipelineTaskIdPill">ID: ...</span>
+              <div class="mission-status-pill status-queued" id="pipelineStatusPill">QUEUED</div>
+            </div>
+          </div>
+
+          <!-- Summary Box -->
+          <div class="summary-box" id="pipelineSummaryBox">
+            <div class="summary-box-title">MISSION SUMMARY &amp; OBJECTIVE</div>
+            <div id="pipelineSummaryContent">Generating structured plan via Groq AI...</div>
+          </div>
+
+          <!-- Steps Header -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+            <div class="directive-label">WORKFLOW PIPELINE &bull; STEP-BY-STEP ACTIONS</div>
+            <div style="font-size:11px;color:var(--text-muted);" id="pipelineStepCounter">0 Steps</div>
+          </div>
+
+          <!-- Steps Container -->
+          <div class="steps-container" id="pipelineStepsContainer">
+            <!-- Dynamic step cards -->
+          </div>
+
+          <!-- Execution Controls -->
+          <div id="pipelineControls" style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--panel-border);">
+            <button class="btn-hud-primary btn-hud-execute" id="btnExecuteTask" onclick="handleExecuteTask()" style="display:none;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <polygon points="3,2 12,7 3,12" fill="currentColor"/>
+              </svg>
+              <span>EXECUTE WORKFLOW NOW</span>
+            </button>
+            <button class="btn-hud-secondary" id="btnCopyReport" onclick="copyTaskResult()" style="display:none;">
+              📋 COPY MISSION REPORT
+            </button>
+            <button class="btn-hud-secondary" onclick="switchTaskTab('new')">
+              + NEW DIRECTIVE
+            </button>
+            <div id="executionStatusIndicator" style="display:none;align-items:center;gap:8px;font-size:11px;color:var(--cyan-bright);margin-left:auto;">
+              <div class="hud-spinner"></div>
+              <span>Executing steps in background with live Tavily web research...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 3: Mission Archive -->
+      <div class="task-view-panel" id="viewMissionArchive">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div class="directive-label">TRACKED MISSIONS &amp; EXECUTION LOGS</div>
+          <button class="btn-hud-secondary" style="padding:4px 10px;font-size:10px;" onclick="refreshTaskHistory(true)">
+            🔄 REFRESH
+          </button>
+        </div>
+        <div class="history-list" id="historyListContainer">
+          <div style="text-align:center;padding:25px;color:var(--text-muted);font-size:12px;">Loading mission history...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 /* =====================================================================
@@ -1882,6 +2571,519 @@ document.querySelectorAll('.nav-item').forEach(item => {
     this.classList.add('active');
   });
 });
+
+/* =====================================================================
+   JARVIS BACKEND INTEGRATION & TASK CONTROLLER
+===================================================================== */
+let currentActiveTask = null;
+let activePollingController = { cancelled: false };
+
+// UI Helper: Show alert banner in modal
+function showModalAlert(message) {
+  const banner = document.getElementById('modalAlertBanner');
+  const text = document.getElementById('modalAlertText');
+  if (banner && text) {
+    text.textContent = message;
+    banner.classList.add('active');
+  }
+}
+
+function hideModalAlert() {
+  const banner = document.getElementById('modalAlertBanner');
+  if (banner) banner.classList.remove('active');
+}
+
+// Health Monitor: Poll GET /health
+async function checkBackendHealth(manual = false) {
+  const pill = document.getElementById('sysStatusPill');
+  const dot = document.getElementById('sysStatusDot');
+  const text = document.getElementById('sysStatusText');
+
+  try {
+    const health = await JarvisApi.healthCheck();
+    if (dot) {
+      dot.className = 'status-dot';
+      dot.style.background = 'var(--green)';
+      dot.style.boxShadow = '0 0 6px var(--green)';
+    }
+    if (text) {
+      text.innerHTML = `JARVIS CORE &bull; ONLINE (${health.version || 'v0.4.0'})`;
+    }
+    if (manual) {
+      showToast(`JARVIS Core Connected (${health.version || 'v0.4.0'})`);
+    }
+    // Update LLM Tile Groq status to active
+    const groqStatus = document.querySelector('.llm-tile-name');
+    refreshTaskHistory();
+    return true;
+  } catch (err) {
+    if (dot) {
+      dot.className = 'status-dot';
+      dot.style.background = 'var(--red)';
+      dot.style.boxShadow = '0 0 6px var(--red)';
+    }
+    if (text) {
+      text.innerHTML = `JARVIS CORE &bull; OFFLINE`;
+    }
+    if (manual) {
+      showToast(err.message || 'Cannot reach JARVIS backend.');
+    }
+    return false;
+  }
+}
+
+// Initial health check and periodic heartbeat
+checkBackendHealth();
+setInterval(() => checkBackendHealth(false), 10000);
+
+// Modal Controls
+function openTaskModal(prefillDirective = '') {
+  const backdrop = document.getElementById('taskModalBackdrop');
+  if (!backdrop) return;
+  backdrop.classList.add('active');
+  hideModalAlert();
+
+  const input = document.getElementById('taskInstructionInput');
+  if (prefillDirective && input) {
+    input.value = prefillDirective;
+    updateCharCounter();
+  }
+
+  if (currentActiveTask) {
+    switchTaskTab('pipeline');
+  } else {
+    switchTaskTab('new');
+    if (input) setTimeout(() => input.focus(), 150);
+  }
+  refreshTaskHistory();
+}
+
+function closeTaskModal() {
+  const backdrop = document.getElementById('taskModalBackdrop');
+  if (backdrop) backdrop.classList.remove('active');
+}
+
+function switchTaskTab(tabName) {
+  hideModalAlert();
+  const tabs = {
+    new: { btn: 'tabBtnNew', view: 'viewNewMission' },
+    pipeline: { btn: 'tabBtnPipeline', view: 'viewActivePipeline' },
+    history: { btn: 'tabBtnHistory', view: 'viewMissionArchive' },
+  };
+
+  Object.keys(tabs).forEach(key => {
+    const btn = document.getElementById(tabs[key].btn);
+    const view = document.getElementById(tabs[key].view);
+    if (btn) btn.classList.toggle('active', key === tabName);
+    if (view) view.classList.toggle('active', key === tabName);
+  });
+
+  if (tabName === 'history') {
+    refreshTaskHistory(false);
+  }
+}
+
+function populateDirective(text) {
+  const input = document.getElementById('taskInstructionInput');
+  if (input) {
+    input.value = text;
+    updateCharCounter();
+    input.focus();
+  }
+}
+
+function updateCharCounter() {
+  const input = document.getElementById('taskInstructionInput');
+  const counter = document.getElementById('charCounter');
+  const btn = document.getElementById('btnGeneratePlan');
+  if (!input || !counter) return;
+
+  const len = input.value.trim().length;
+  counter.textContent = `${len} / 2000 chars (min 5)`;
+  if (btn) {
+    btn.disabled = len < 5;
+  }
+}
+
+const taskInputEl = document.getElementById('taskInstructionInput');
+if (taskInputEl) {
+  taskInputEl.addEventListener('input', updateCharCounter);
+  taskInputEl.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleCreateTask();
+    }
+  });
+}
+
+// Topbar Search Box: Press Enter to open task with query
+const topSearch = document.getElementById('topbarSearchInput');
+if (topSearch) {
+  topSearch.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = topSearch.value.trim();
+      if (val) {
+        openTaskModal(val);
+      } else {
+        openTaskModal();
+      }
+    }
+  });
+}
+
+// Executive briefing shortcut
+function openExecutiveBriefingTask() {
+  openTaskModal('Prepare executive briefing summarizing recent project status and deliverables');
+}
+
+// Close on backdrop click outside dialog
+const modalBackdrop = document.getElementById('taskModalBackdrop');
+if (modalBackdrop) {
+  modalBackdrop.addEventListener('click', (e) => {
+    if (e.target === modalBackdrop) {
+      closeTaskModal();
+    }
+  });
+}
+
+// Escape key to close modal
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const backdrop = document.getElementById('taskModalBackdrop');
+    if (backdrop && backdrop.classList.contains('active')) {
+      closeTaskModal();
+    }
+  }
+});
+
+// Citation URL parser for displaying verified web sources
+function extractCitations(text) {
+  if (!text) return [];
+  const urlRegex = /https?:\/\/[^\s\)\],\"\'<>]+/g;
+  const matches = text.match(urlRegex) || [];
+  const uniqueUrls = [];
+  const seen = new Set();
+  for (const url of matches) {
+    const clean = url.replace(/[\.\,\;]+$/, '');
+    if (!seen.has(clean.toLowerCase())) {
+      seen.add(clean.toLowerCase());
+      uniqueUrls.push(clean);
+    }
+  }
+  return uniqueUrls;
+}
+
+// Render steps and status in Pipeline View
+function renderTaskPipeline(task) {
+  currentActiveTask = task;
+  const emptyState = document.getElementById('pipelineEmptyState');
+  const populatedState = document.getElementById('pipelinePopulatedState');
+  if (emptyState) emptyState.style.display = 'none';
+  if (populatedState) populatedState.style.display = 'flex';
+
+  // Meta info
+  const instructionEl = document.getElementById('pipelineInstructionText');
+  const idEl = document.getElementById('pipelineTaskIdPill');
+  const statusPill = document.getElementById('pipelineStatusPill');
+  const modalStatusBadge = document.getElementById('modalStatusBadge');
+  const summaryBox = document.getElementById('pipelineSummaryBox');
+  const summaryContent = document.getElementById('pipelineSummaryContent');
+  const stepCounter = document.getElementById('pipelineStepCounter');
+  const stepsBadge = document.getElementById('pipelineStepsBadge');
+
+  if (instructionEl) instructionEl.textContent = task.instruction;
+  if (idEl) idEl.textContent = `ID: ${task.task_id.slice(0, 8)}...`;
+
+  const statusClass = `status-${task.status}`;
+  if (statusPill) {
+    statusPill.className = `mission-status-pill ${statusClass}`;
+    statusPill.textContent = task.status.toUpperCase();
+  }
+  if (modalStatusBadge) {
+    modalStatusBadge.className = `mission-status-pill ${statusClass}`;
+    modalStatusBadge.textContent = task.status.toUpperCase();
+  }
+
+  // Summary
+  if (summaryBox && summaryContent) {
+    if (task.result) {
+      summaryContent.textContent = task.result;
+      summaryBox.style.display = 'block';
+    } else if (task.status === 'queued' || task.status === 'running') {
+      summaryContent.innerHTML = '<span class="hud-spinner" style="margin-right:6px;"></span> Generating structured plan with Groq...';
+      summaryBox.style.display = 'block';
+    } else {
+      summaryBox.style.display = 'none';
+    }
+  }
+
+  // Steps
+  const steps = task.steps || [];
+  if (stepCounter) stepCounter.textContent = `${steps.length} Steps`;
+  if (stepsBadge) {
+    stepsBadge.textContent = steps.length;
+    stepsBadge.style.display = steps.length > 0 ? 'inline-block' : 'none';
+  }
+
+  const container = document.getElementById('pipelineStepsContainer');
+  if (container) {
+    if (steps.length === 0) {
+      container.innerHTML = `
+        <div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">
+          <div class="hud-spinner" style="margin-bottom:8px;"></div>
+          <div>Formulating sequential action plan via Groq AI...</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = steps.map((step, idx) => {
+        const stepNum = String(step.step_id || idx + 1).padStart(2, '0');
+        const sClass = `step-${step.status || 'queued'}`;
+        const pillClass = `status-${step.status || 'queued'}`;
+        const citations = extractCitations(step.result);
+
+        return `
+          <div class="step-card ${sClass}">
+            <div class="step-header-row">
+              <span class="step-num">STEP ${stepNum}</span>
+              <span class="mission-status-pill ${pillClass}">${(step.status || 'queued').toUpperCase()}</span>
+            </div>
+            <div class="step-title-text">${escapeHtml(step.description)}</div>
+            ${step.expected_output ? `
+              <div class="step-expected-box">
+                <span class="step-expected-label">Expected Output:</span>
+                ${escapeHtml(step.expected_output)}
+              </div>
+            ` : ''}
+            ${step.result ? `
+              <div class="step-result-box">
+                <div style="font-family:var(--font-hud);font-size:9px;color:var(--cyan-dim);margin-bottom:4px;letter-spacing:0.08em;">EXECUTION RESULT:</div>
+                ${escapeHtml(step.result)}
+              </div>
+            ` : ''}
+            ${citations.length > 0 ? `
+              <div class="step-citations-row">
+                <span style="font-size:10px;color:var(--text-muted);margin-right:4px;">Sources:</span>
+                ${citations.map(url => `
+                  <a href="${url}" target="_blank" rel="noopener noreferrer" class="citation-tag">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5a3 3 0 0 1 5-2.2M8 5a3 3 0 0 1-5 2.2" stroke="currentColor" stroke-width="1.2"/></svg>
+                    ${cleanDomain(url)}
+                  </a>
+                `).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // Control Buttons
+  const btnExecute = document.getElementById('btnExecuteTask');
+  const btnCopy = document.getElementById('btnCopyReport');
+  const execIndicator = document.getElementById('executionStatusIndicator');
+
+  if (btnExecute) {
+    btnExecute.style.display = task.status === 'planned' ? 'inline-flex' : 'none';
+  }
+  if (btnCopy) {
+    btnCopy.style.display = task.status === 'completed' ? 'inline-flex' : 'none';
+  }
+  if (execIndicator) {
+    execIndicator.style.display = (task.status === 'running' && steps.length > 0) ? 'inline-flex' : 'none';
+  }
+
+  // If task has an error banner
+  if (task.error) {
+    showModalAlert(task.error);
+  } else {
+    hideModalAlert();
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function cleanDomain(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch (_) {
+    return 'source';
+  }
+}
+
+// 1. Task Creation & Planning Handler
+async function handleCreateTask() {
+  const input = document.getElementById('taskInstructionInput');
+  const btn = document.getElementById('btnGeneratePlan');
+  const btnText = document.getElementById('btnGeneratePlanText');
+  hideModalAlert();
+
+  if (!input) return;
+  const directive = input.value.trim();
+  if (directive.length < 5) {
+    showModalAlert('Please provide a task directive with at least 5 characters.');
+    input.focus();
+    return;
+  }
+
+  // Loading state
+  if (btn) btn.disabled = true;
+  if (btnText) btnText.innerHTML = '<span class="hud-spinner"></span> PLANNING...';
+
+  try {
+    const task = await JarvisApi.createTask(directive);
+    currentActiveTask = task;
+    renderTaskPipeline(task);
+    switchTaskTab('pipeline');
+    showToast('Task submitted: AI planning initiated...');
+
+    // Poll for planning completion (state moves from queued -> running -> planned)
+    activePollingController.cancelled = false;
+    const finalPlanTask = await JarvisApi.pollTask(
+      task.task_id,
+      (updatedTask) => {
+        renderTaskPipeline(updatedTask);
+      },
+      { intervalMs: 1200, maxAttempts: 120, stopStatuses: ['planned', 'failed', 'blocked'] }
+    );
+
+    renderTaskPipeline(finalPlanTask);
+
+    if (finalPlanTask.status === 'planned') {
+      showToast(`AI Plan Generated: ${finalPlanTask.steps.length} sequential steps ready for execution!`);
+    } else if (finalPlanTask.status === 'failed') {
+      showModalAlert(finalPlanTask.error || 'AI planning encountered an issue. Check backend logs.');
+    }
+    refreshTaskHistory();
+  } catch (err) {
+    showModalAlert(err.message || 'Failed to dispatch task.');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (btnText) btnText.textContent = 'GENERATE AI PLAN';
+  }
+}
+
+// 2. Task Execution Handler
+async function handleExecuteTask() {
+  if (!currentActiveTask) return;
+  hideModalAlert();
+  const btnExecute = document.getElementById('btnExecuteTask');
+  const execIndicator = document.getElementById('executionStatusIndicator');
+
+  if (btnExecute) btnExecute.disabled = true;
+  if (execIndicator) execIndicator.style.display = 'inline-flex';
+
+  try {
+    showToast('Executing mission workflow: Starting web search & tool steps...');
+    const runningTask = await JarvisApi.executeTask(currentActiveTask.task_id);
+    renderTaskPipeline(runningTask);
+
+    // Poll execution until terminal status
+    const finishedTask = await JarvisApi.pollTask(
+      currentActiveTask.task_id,
+      (updatedTask) => {
+        renderTaskPipeline(updatedTask);
+      },
+      { intervalMs: 1500, maxAttempts: 200, stopStatuses: ['completed', 'failed', 'blocked'] }
+    );
+
+    renderTaskPipeline(finishedTask);
+
+    if (finishedTask.status === 'completed') {
+      showToast('Mission Accomplished: All task steps completed successfully!');
+    } else if (finishedTask.status === 'blocked') {
+      showModalAlert(finishedTask.error || 'Task execution stopped: Step could not be completed reliably.');
+    } else if (finishedTask.status === 'failed') {
+      showModalAlert(finishedTask.error || 'Task execution failed. Check backend logs.');
+    }
+    refreshTaskHistory();
+  } catch (err) {
+    showModalAlert(err.message || 'Task execution error.');
+  } finally {
+    if (btnExecute) btnExecute.disabled = false;
+  }
+}
+
+// Copy Mission Report
+function copyTaskResult() {
+  if (!currentActiveTask || !currentActiveTask.result) {
+    showToast('No report content to copy.');
+    return;
+  }
+  navigator.clipboard.writeText(currentActiveTask.result)
+    .then(() => showToast('Mission report copied to clipboard!'))
+    .catch(() => showToast('Failed to copy to clipboard.'));
+}
+
+// Task History / Archive
+async function refreshTaskHistory(manual = false) {
+  const container = document.getElementById('historyListContainer');
+  const badge = document.getElementById('tasksBadge');
+
+  try {
+    const tasks = await JarvisApi.listTasks();
+    if (badge) {
+      badge.textContent = tasks.length;
+      badge.className = tasks.length > 0 ? 'nav-badge' : 'nav-badge amber';
+    }
+
+    if (!container) return;
+    if (tasks.length === 0) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:12px;">
+          No missions tracked yet. Click "New Mission" to start.
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = tasks.slice().reverse().map(task => {
+      const statusClass = `status-${task.status}`;
+      return `
+        <div class="history-item-card" onclick="loadTaskFromArchive('${task.task_id}')">
+          <div>
+            <div class="history-item-instruction">${escapeHtml(task.instruction)}</div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">
+              ID: ${task.task_id.slice(0, 8)}... &bull; ${task.steps ? task.steps.length : 0} Steps
+            </div>
+          </div>
+          <div class="history-item-meta">
+            <span class="mission-status-pill ${statusClass}">${task.status.toUpperCase()}</span>
+            <span style="color:var(--cyan-bright);font-size:12px;">›</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (manual) showToast('Mission archive refreshed.');
+  } catch (err) {
+    if (container) {
+      container.innerHTML = `
+        <div style="text-align:center;padding:20px;color:#ff8da1;font-size:12px;">
+          Failed to load mission history: ${escapeHtml(err.message)}
+        </div>
+      `;
+    }
+  }
+}
+
+async function loadTaskFromArchive(taskId) {
+  try {
+    const task = await JarvisApi.getTask(taskId);
+    renderTaskPipeline(task);
+    switchTaskTab('pipeline');
+  } catch (err) {
+    showToast(`Failed to load task ${taskId}: ${err.message}`);
+  }
+}
 </script>
 </body>
 </html>
