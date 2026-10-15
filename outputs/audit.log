@@ -1,0 +1,18 @@
+[2026-10-15 15:32:22] Test event: Jarvis audit logging works
+[2026-10-15 15:32:22] Test event: Jarvis audit logging works
+[2026-10-15 15:38:54] Workflow started
+[2026-10-15 15:38:54] Reading meeting notes: STARTED
+[2026-10-15 15:38:54] Reading meeting notes: SUCCESS
+[2026-10-15 15:38:54] Summarizing notes: STARTED
+[2026-10-15 15:38:54] Summarizing notes: SUCCESS
+[2026-10-15 15:38:54] Saving briefing: STARTED
+[2026-10-15 15:38:54] Saving briefing: SUCCESS
+[2026-10-15 15:38:54] Workflow completed successfully
+[2026-10-15 15:51:52] Workflow started
+[2026-10-15 15:51:52] Reading meeting notes: STARTED
+[2026-10-15 15:51:52] Reading meeting notes: SUCCESS
+[2026-10-15 15:51:52] Summarizing notes: STARTED
+[2026-10-15 15:51:52] Summarizing notes: SUCCESS
+[2026-10-15 15:51:52] Saving briefing: STARTED
+[2026-10-15 15:51:52] Saving briefing: FAILED
+[2026-10-15 15:51:52] Workflow failed
