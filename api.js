@@ -211,6 +211,15 @@
         408
       );
     },
+
+    /**
+     * Run the local meeting notes briefing workflow
+     */
+    async runBriefingWorkflow() {
+      return await request('/api/workflows/briefing', {
+        method: 'POST',
+      });
+    },
   };
 
   global.JarvisApi = JarvisApi;

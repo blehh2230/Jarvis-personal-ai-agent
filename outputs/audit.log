@@ -16,3 +16,19 @@
 [2026-10-15 15:51:52] Saving briefing: STARTED
 [2026-10-15 15:51:52] Saving briefing: FAILED
 [2026-10-15 15:51:52] Workflow failed
+[2026-10-15 17:43:23] Workflow started
+[2026-10-15 17:43:23] Reading meeting notes: STARTED
+[2026-10-15 17:43:23] Reading meeting notes: SUCCESS
+[2026-10-15 17:43:23] Summarizing notes: STARTED
+[2026-10-15 17:43:23] Summarizing notes: SUCCESS
+[2026-10-15 17:43:23] Saving briefing: STARTED
+[2026-10-15 17:43:23] Saving briefing: SUCCESS
+[2026-10-15 17:43:23] Workflow completed successfully
+[2026-10-15 17:50:40] Workflow started
+[2026-10-15 17:50:40] Reading meeting notes: STARTED
+[2026-10-15 17:50:40] Reading meeting notes: SUCCESS
+[2026-10-15 17:50:40] Summarizing notes: STARTED
+[2026-10-15 17:50:40] Summarizing notes: SUCCESS
+[2026-10-15 17:50:40] Saving briefing: STARTED
+[2026-10-15 17:50:40] Saving briefing: SUCCESS
+[2026-10-15 17:50:40] Workflow completed successfully

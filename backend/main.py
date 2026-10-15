@@ -151,6 +151,23 @@ async def list_tasks():
     return list(TASKS.values())
 
 
+@app.post("/api/workflows/briefing")
+async def run_briefing_workflow():
+    """Execute the meeting briefing workflow with audit logging."""
+    try:
+        import sys
+        import time
+        if PROJECT_ROOT not in sys.path:
+            sys.path.insert(0, PROJECT_ROOT)
+        from tools import create_briefing
+        out_name = f"outputs/meeting_briefing_{int(time.time())}.txt"
+        result = create_briefing(output_path=out_name)
+        return result
+    except Exception as exc:
+        logger.exception("Briefing workflow error.")
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @app.post(
     "/api/tasks/{task_id}/execute",
     response_model=TaskResponse,
