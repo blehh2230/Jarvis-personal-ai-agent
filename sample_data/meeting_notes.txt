@@ -1,0 +1,11 @@
+Project: Campus Event Planner
+
+The team needs to finalise the event registration form by Friday.
+
+Ravi will prepare the user interface.
+
+Ananya will test valid and invalid registration inputs.
+
+The team must verify that duplicate registrations are rejected.
+
+The next review meeting is scheduled for Monday at 10 AM.
