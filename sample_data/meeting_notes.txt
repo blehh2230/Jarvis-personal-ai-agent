@@ -1,11 +1,88 @@
-Project: Campus Event Planner
+Project: Campus Event Planner — Q4 Sprint Planning Meeting
+Date: Thursday, 14 November 2026
+Location: Engineering Block B, Room 204
+Attendees: Priya Nair (PM), Ravi Shankar (Frontend), Ananya Mehta (QA), Dev Kapoor (Backend), Simran Kaur (UX)
+Facilitator: Priya Nair
+Duration: 90 minutes
 
-The team needs to finalise the event registration form by Friday.
+---
 
-Ravi will prepare the user interface.
+AGENDA OVERVIEW
+---------------
+1. Sprint retrospective (15 min)
+2. Current blockers (20 min)
+3. Q4 feature priorities (25 min)
+4. Action items and deadlines (20 min)
+5. AOB (10 min)
 
-Ananya will test valid and invalid registration inputs.
+---
 
-The team must verify that duplicate registrations are rejected.
+1. SPRINT RETROSPECTIVE
+------------------------
+The team reviewed the previous two-week sprint. Overall velocity was 82% of planned story points. Three user stories were carried forward due to API integration delays. The registration form module was completed on time, and positive user feedback was received from the pilot group of 50 students. QA reported 14 bugs found, 12 resolved, 2 open (P2 priority). CI/CD pipeline now runs in under 6 minutes, down from 14 minutes last sprint.
 
-The next review meeting is scheduled for Monday at 10 AM.
+2. CURRENT BLOCKERS
+--------------------
+- Backend API: The duplicate-registration check endpoint is returning a 500 error intermittently under load. Dev Kapoor will investigate and patch by EOD Friday 15 November.
+- UX Assets: Three icon sets for the event dashboard are still pending from the design contractor. Simran Kaur will follow up today and set a hard deadline of Monday 18 November.
+- Environment: The staging server ran out of disk space on Tuesday, causing a 4-hour outage. DevOps has extended the volume; monitoring alerts are now configured.
+- Dependency: The third-party calendar widget has a breaking change in v2.4.0. Ravi Shankar will pin the package to v2.3.9 and open a ticket to evaluate the upgrade path next sprint.
+
+3. Q4 FEATURE PRIORITIES
+--------------------------
+The product roadmap was reviewed. The following features were prioritised for Q4:
+
+  Priority 1 (Must Ship by 30 November):
+  - Event registration form with full validation (in progress — 85% done)
+  - Duplicate registration rejection (blocked — see section 2)
+  - Email confirmation on successful registration
+
+  Priority 2 (Target 15 December):
+  - Admin dashboard: view registrations, export CSV
+  - Waitlist management when capacity is reached
+  - SMS notification integration (Twilio sandbox)
+
+  Priority 3 (Stretch Goals):
+  - QR code ticket generation
+  - Mobile-responsive redesign of the event listing page
+  - Analytics dashboard (event views, conversion rate)
+
+4. ACTION ITEMS AND DEADLINES
+------------------------------
+| Owner          | Action                                               | Deadline            |
+|----------------|------------------------------------------------------|---------------------|
+| Ravi Shankar   | Finalise event registration form UI                  | Friday 15 November  |
+| Ananya Mehta   | Complete regression test suite for registration flow | Monday 18 November  |
+| Dev Kapoor     | Fix duplicate-registration 500 error                 | Friday 15 November  |
+| Simran Kaur    | Deliver icon assets from contractor                  | Monday 18 November  |
+| Priya Nair     | Draft email confirmation copy and send for review    | Thursday 21 November|
+| Dev Kapoor     | Implement email confirmation endpoint                | Wednesday 20 November|
+| All            | Code freeze for Priority 1 features                  | Wednesday 20 November|
+| All            | Staging deployment and UAT sign-off                  | Friday 22 November  |
+
+5. ANY OTHER BUSINESS (AOB)
+-----------------------------
+- The next sprint planning meeting is scheduled for Monday, 18 November 2026 at 10:00 AM in Room 204.
+- Priya Nair reminded the team that the university showcase demo is on 3 December; all Priority 1 features must be stable on staging by 25 November.
+- Dev Kapoor proposed adding a lightweight load-testing step to the CI pipeline. The team agreed; Dev will implement this by end of next sprint.
+- Simran Kaur requested a half-day UX review session on 19 November to validate the admin dashboard wireframes before development begins. Priya will schedule it.
+
+---
+
+DECISIONS MADE
+--------------
+1. Pin calendar widget to v2.3.9 immediately.
+2. Code freeze date confirmed: Wednesday 20 November.
+3. Load testing will be added to CI next sprint.
+4. UX review session confirmed for 19 November.
+
+RISKS AND MITIGATIONS
+----------------------
+- Risk: Contractor asset delay could block UX work.
+  Mitigation: Simran will create placeholder icons so frontend can proceed.
+- Risk: Duplicate-registration bug may not be reproducible in staging.
+  Mitigation: Dev will add detailed logging and reproduce via a load test script.
+
+NEXT MEETING
+------------
+Monday, 18 November 2026 at 10:00 AM — Sprint Planning + Review of UAT results.
