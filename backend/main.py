@@ -168,6 +168,54 @@ async def run_briefing_workflow():
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+from backend.memory import (
+    add_memory as add_memory_record,
+    delete_memory as delete_memory_record,
+    get_real_memory_insights,
+    load_memories as load_memory_records,
+)
+from pydantic import BaseModel, Field
+
+
+class MemoryCreateRequest(BaseModel):
+    text: str = Field(..., min_length=2, max_length=2000)
+    cat: str = Field("GENERAL", max_length=50)
+    tag: str = Field("OPERATOR", max_length=50)
+
+
+@app.get("/api/memory/insights")
+async def get_memory_insights_endpoint():
+    """Retrieve real memory telemetry, audit counts, and system RAM usage."""
+    return get_real_memory_insights(active_tasks_count=len(TASKS))
+
+
+@app.get("/api/memory/items")
+async def get_memory_items_endpoint():
+    """Retrieve all persistent memory items."""
+    return load_memory_records()
+
+
+@app.post("/api/memory/items", status_code=201)
+async def create_memory_item_endpoint(request: MemoryCreateRequest):
+    """Store and persist a new memory vector record."""
+    new_mem = add_memory_record(
+        text=request.text,
+        cat=request.cat,
+        tag=request.tag,
+    )
+    return new_mem
+
+
+@app.delete("/api/memory/items/{memory_id}")
+async def delete_memory_item_endpoint(memory_id: str):
+    """Delete a memory record by ID."""
+    success = delete_memory_record(memory_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Memory item not found.")
+    return {"status": "deleted", "id": memory_id}
+
+
+
 @app.post(
     "/api/tasks/{task_id}/execute",
     response_model=TaskResponse,

@@ -220,7 +220,41 @@
         method: 'POST',
       });
     },
+
+    /**
+     * Retrieve real-time memory telemetry and audit insights: GET /api/memory/insights
+     */
+    async getMemoryInsights() {
+      return await request('/api/memory/insights', { method: 'GET' });
+    },
+
+    /**
+     * Retrieve persistent memories: GET /api/memory/items
+     */
+    async listMemories() {
+      return await request('/api/memory/items', { method: 'GET' });
+    },
+
+    /**
+     * Ingest and persist a new memory record: POST /api/memory/items
+     */
+    async storeMemory(text, cat = 'GENERAL', tag = 'OPERATOR') {
+      return await request('/api/memory/items', {
+        method: 'POST',
+        body: JSON.stringify({ text, cat, tag }),
+      });
+    },
+
+    /**
+     * Delete a memory record: DELETE /api/memory/items/{id}
+     */
+    async deleteMemory(memoryId) {
+      return await request(`/api/memory/items/${encodeURIComponent(memoryId)}`, {
+        method: 'DELETE',
+      });
+    },
   };
+
 
   global.JarvisApi = JarvisApi;
   global.JarvisApiError = JarvisApiError;
