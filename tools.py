@@ -30,5 +30,35 @@ def read_notes():
         return failure("Meeting notes file not found.")
 
 
-print(read_notes())
+def summarize_text(text, max_sentences=3):
+    if text.strip() == "":
+        return failure("Text cannot be empty.")
+
+    sentences = text.split(".")
+    clean_sentences = []
+
+    for sentence in sentences:
+        sentence = sentence.strip()
+
+        if sentence != "":
+            clean_sentences.append(sentence)
+
+    summary = ". ".join(clean_sentences[:max_sentences])
+
+    if summary != "":
+        summary = summary + "."
+
+    return success(summary)
+
+
+result = read_notes()
+
+print("\nFULL NOTES:")
+print(result)
+
+print("\nSUMMARY:")
+print(summarize_text(
+    "Meeting on Monday. Report due Friday. Test on Saturday. Submit on Sunday.",
+    2
+))
 
