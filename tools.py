@@ -52,6 +52,10 @@ def save_briefing(content, filepath="outputs/meeting_briefing.txt"):
         return failure("Briefing content cannot be empty.")
 
     try:
+        parent_dir = os.path.dirname(filepath)
+        if parent_dir:
+            os.makedirs(parent_dir, exist_ok=True)
+
         with open(filepath, "x", encoding="utf-8") as file:
             file.write(content)
 

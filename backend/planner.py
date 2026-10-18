@@ -25,9 +25,75 @@ class TaskPlan(BaseModel):
     steps: list[PlannedStep] = Field(min_length=1, max_length=6)
 
 
+def _generate_fallback_plan(instruction: str) -> TaskPlan:
+    """Generate a structured rule-based plan when Groq API key is not configured."""
+    clean_instr = instruction.strip()
+    lowered = clean_instr.lower()
+
+    if any(k in lowered for k in ["meeting", "briefing", "notes"]):
+        steps = [
+            PlannedStep(
+                title="Ingest Workspace Notes",
+                description="Load and validate meeting notes or reference documents from local storage.",
+                expected_output="Raw text content of the target document loaded in memory.",
+            ),
+            PlannedStep(
+                title="Extract Key Insights & Summarize",
+                description="Process textual notes through summarization pipeline to extract core decisions and blockers.",
+                expected_output="Structured executive summary highlighting priority items.",
+            ),
+            PlannedStep(
+                title="Persist Briefing & Log Trace",
+                description="Save generated briefing output to disk and record non-repudiation audit event.",
+                expected_output="Verified output file written to outputs directory with audit log trace.",
+            ),
+        ]
+        summary = f"Executive briefing and notes orchestration plan for: {clean_instr[:100]}"
+    elif any(k in lowered for k in ["search", "find", "research", "lookup"]):
+        steps = [
+            PlannedStep(
+                title="Query Formulation",
+                description=f"Deconstruct user request into targeted search queries.",
+                expected_output="List of optimized search queries.",
+            ),
+            PlannedStep(
+                title="Information Retrieval",
+                description="Execute search across verified sources and extract factual snippets.",
+                expected_output="Curated collection of evidence and references.",
+            ),
+            PlannedStep(
+                title="Synthesize Findings",
+                description="Aggregate findings into a cohesive analysis report.",
+                expected_output="Structured briefing of findings with source attribution.",
+            ),
+        ]
+        summary = f"Research and intelligence plan for: {clean_instr[:100]}"
+    else:
+        steps = [
+            PlannedStep(
+                title="Input Analysis & Requirements Scoping",
+                description=f"Parse instruction '{clean_instr[:80]}' to isolate core operational objectives.",
+                expected_output="Validated operational criteria and parameter mappings.",
+            ),
+            PlannedStep(
+                title="Core Processing & Tool Dispatch",
+                description="Execute processing logic using available system tools and verified computational components.",
+                expected_output="Computed transformation and intermediate data deliverables.",
+            ),
+            PlannedStep(
+                title="Verification & Audit Finalization",
+                description="Validate output against quality benchmarks, persist results, and record system telemetry.",
+                expected_output="Final task outcome delivered and recorded in audit log.",
+            ),
+        ]
+        summary = f"Sequential execution plan for: {clean_instr[:100]}"
+
+    return TaskPlan(summary=summary, steps=steps)
+
+
 async def generate_plan(instruction: str) -> TaskPlan:
     """
-    Generate a structured task plan using Groq.
+    Generate a structured task plan using Groq or fallback planner.
 
     This function plans tasks only. It does not execute
     external actions or claim that any actions were completed.
@@ -36,9 +102,7 @@ async def generate_plan(instruction: str) -> TaskPlan:
     api_key = os.getenv("GROQ_API_KEY")
 
     if not api_key:
-        raise RuntimeError(
-            "GROQ_API_KEY is missing. Add it to the root .env file."
-        )
+        return _generate_fallback_plan(instruction)
 
     client = AsyncGroq(
         api_key=api_key,

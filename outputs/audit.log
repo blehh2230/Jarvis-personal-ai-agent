@@ -48,3 +48,66 @@
 [2026-10-15 18:01:02] Saving briefing: STARTED
 [2026-10-15 18:01:02] Saving briefing: SUCCESS
 [2026-10-15 18:01:02] Workflow completed successfully
+[2026-10-18 12:26:09] Test event: Jarvis audit logging works
+[2026-10-18 12:33:29] Workflow started
+[2026-10-18 12:33:29] Reading meeting notes: STARTED
+[2026-10-18 12:33:29] Reading meeting notes: SUCCESS
+[2026-10-18 12:33:29] Summarizing notes: STARTED
+[2026-10-18 12:33:29] Summarizing notes: SUCCESS
+[2026-10-18 12:33:29] Saving briefing: STARTED
+[2026-10-18 12:33:29] Saving briefing: SUCCESS
+[2026-10-18 12:33:29] Workflow completed successfully
+[2026-10-18 12:55:25] API test event
+[2026-10-18 12:55:25] Workflow started
+[2026-10-18 12:55:25] Reading meeting notes: STARTED
+[2026-10-18 12:55:25] Reading meeting notes: SUCCESS
+[2026-10-18 12:55:25] Summarizing notes: STARTED
+[2026-10-18 12:55:25] Summarizing notes: SUCCESS
+[2026-10-18 12:55:25] Saving briefing: STARTED
+[2026-10-18 12:55:25] Saving briefing: SUCCESS
+[2026-10-18 12:55:25] Workflow completed successfully
+[2026-10-18 12:55:25] Workflow started
+[2026-10-18 12:55:25] Reading meeting notes: STARTED
+[2026-10-18 12:55:25] Reading meeting notes: SUCCESS
+[2026-10-18 12:55:25] Summarizing notes: STARTED
+[2026-10-18 12:55:25] Summarizing notes: SUCCESS
+[2026-10-18 12:55:25] Saving briefing: STARTED
+[2026-10-18 12:55:25] Saving briefing: SUCCESS
+[2026-10-18 12:55:25] Workflow completed successfully
+[2026-10-18 12:55:25] Unit test audit event verification 1792308325.33833
+[2026-10-18 12:55:43] API test event
+[2026-10-18 12:55:43] Workflow started
+[2026-10-18 12:55:43] Reading meeting notes: STARTED
+[2026-10-18 12:55:43] Reading meeting notes: SUCCESS
+[2026-10-18 12:55:43] Summarizing notes: STARTED
+[2026-10-18 12:55:43] Summarizing notes: SUCCESS
+[2026-10-18 12:55:43] Saving briefing: STARTED
+[2026-10-18 12:55:43] Saving briefing: SUCCESS
+[2026-10-18 12:55:43] Workflow completed successfully
+[2026-10-18 12:55:43] Workflow started
+[2026-10-18 12:55:43] Reading meeting notes: STARTED
+[2026-10-18 12:55:43] Reading meeting notes: SUCCESS
+[2026-10-18 12:55:43] Summarizing notes: STARTED
+[2026-10-18 12:55:43] Summarizing notes: SUCCESS
+[2026-10-18 12:55:43] Saving briefing: STARTED
+[2026-10-18 12:55:43] Saving briefing: SUCCESS
+[2026-10-18 12:55:43] Workflow completed successfully
+[2026-10-18 12:55:43] Unit test audit event verification 1792308343.4631095
+[2026-10-18 12:55:52] API test event
+[2026-10-18 12:55:52] Workflow started
+[2026-10-18 12:55:52] Reading meeting notes: STARTED
+[2026-10-18 12:55:52] Reading meeting notes: SUCCESS
+[2026-10-18 12:55:52] Summarizing notes: STARTED
+[2026-10-18 12:55:52] Summarizing notes: SUCCESS
+[2026-10-18 12:55:52] Saving briefing: STARTED
+[2026-10-18 12:55:52] Saving briefing: SUCCESS
+[2026-10-18 12:55:52] Workflow completed successfully
+[2026-10-18 12:55:52] Workflow started
+[2026-10-18 12:55:52] Reading meeting notes: STARTED
+[2026-10-18 12:55:52] Reading meeting notes: SUCCESS
+[2026-10-18 12:55:52] Summarizing notes: STARTED
+[2026-10-18 12:55:52] Summarizing notes: SUCCESS
+[2026-10-18 12:55:52] Saving briefing: STARTED
+[2026-10-18 12:55:52] Saving briefing: SUCCESS
+[2026-10-18 12:55:52] Workflow completed successfully
+[2026-10-18 12:55:52] Unit test audit event verification 1792308352.3225133
