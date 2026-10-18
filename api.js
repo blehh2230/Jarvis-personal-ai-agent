@@ -109,6 +109,14 @@
   }
 
   const JarvisApi = {
+    get baseUrl() {
+      return baseUrl;
+    },
+
+    set baseUrl(newUrl) {
+      this.setBaseUrl(newUrl);
+    },
+
     getBaseUrl() {
       return baseUrl;
     },
@@ -251,6 +259,71 @@
     async deleteMemory(memoryId) {
       return await request(`/api/memory/items/${encodeURIComponent(memoryId)}`, {
         method: 'DELETE',
+      });
+    },
+
+    /**
+     * List all available tools and their statuses: GET /api/tools
+     */
+    async listTools() {
+      return await request('/api/tools', { method: 'GET' });
+    },
+
+    /**
+     * Test read_notes tool: POST /api/tools/read-notes
+     */
+    async testReadNotes(filename = null) {
+      const endpoint = filename
+        ? `/api/tools/read-notes?filename=${encodeURIComponent(filename)}`
+        : '/api/tools/read-notes';
+      return await request(endpoint, { method: 'POST' });
+    },
+
+    /**
+     * Test summarize tool: POST /api/tools/summarize
+     */
+    async testSummarize(text, maxSentences = 3) {
+      return await request('/api/tools/summarize', {
+        method: 'POST',
+        body: JSON.stringify({ text, max_sentences: maxSentences }),
+      });
+    },
+
+    /**
+     * Test save_briefing tool: POST /api/tools/save-briefing
+     */
+    async testSaveBriefing(content, filepath = null) {
+      return await request('/api/tools/save-briefing', {
+        method: 'POST',
+        body: JSON.stringify({ content, filepath }),
+      });
+    },
+
+    /**
+     * Retrieve audit log entries: GET /api/tools/audit-log
+     */
+    async getAuditLogs(limit = 20) {
+      return await request(`/api/tools/audit-log?limit=${limit}`, {
+        method: 'GET',
+      });
+    },
+
+    /**
+     * Record an audit log event: POST /api/tools/audit-log
+     */
+    async logAuditEvent(message) {
+      return await request('/api/tools/audit-log', {
+        method: 'POST',
+        body: JSON.stringify({ message }),
+      });
+    },
+
+    /**
+     * Run full automated pytest suite: POST /api/testing/run
+     */
+    async runTestSuite() {
+      return await request('/api/testing/run', {
+        method: 'POST',
       });
     },
   };
